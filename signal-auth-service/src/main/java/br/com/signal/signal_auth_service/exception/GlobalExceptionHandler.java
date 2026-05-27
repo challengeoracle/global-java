@@ -3,6 +3,7 @@ package br.com.signal.signal_auth_service.exception;
 import br.com.signal.signal_auth_service.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -64,6 +65,27 @@ public class GlobalExceptionHandler {
                         .status(HttpStatus.NOT_FOUND.value())
                         .error("Not Found")
                         .message(ex.getMessage())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(
+            MethodArgumentNotValidException ex
+    ) {
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .findFirst()
+                .orElse("Invalid request");
+
+        return ResponseEntity.badRequest().body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.BAD_REQUEST.value())
+                        .error("Validation Error")
+                        .message(message)
                         .timestamp(LocalDateTime.now())
                         .build()
         );
