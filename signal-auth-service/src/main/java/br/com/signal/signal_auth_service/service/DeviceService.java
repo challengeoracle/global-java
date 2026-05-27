@@ -3,9 +3,11 @@ package br.com.signal.signal_auth_service.service;
 import br.com.signal.signal_auth_service.config.OfflineProperties;
 import br.com.signal.signal_auth_service.dto.DeviceStatusResponse;
 import br.com.signal.signal_auth_service.dto.OfflineActivationResponse;
+import br.com.signal.signal_auth_service.dto.UpdateDeviceRequest;
 import br.com.signal.signal_auth_service.entity.Device;
 import br.com.signal.signal_auth_service.entity.User;
 import br.com.signal.signal_auth_service.entity.UserRole;
+import br.com.signal.signal_auth_service.exception.BadRequestException;
 import br.com.signal.signal_auth_service.exception.ForbiddenException;
 import br.com.signal.signal_auth_service.exception.NotFoundException;
 import br.com.signal.signal_auth_service.exception.UnauthorizedException;
@@ -15,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -26,20 +27,9 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final OfflineProperties offlineProperties;
 
-    public OfflineActivationResponse activateOfflineMode(
-            String userEmail,
-            String deviceId
-    ) {
+    public OfflineActivationResponse activateOfflineMode(String userEmail) {
         User user = findSellerByEmail(userEmail);
-
-        Device device = deviceRepository
-                .findByUser_IdAndDeviceId(user.getId(), deviceId)
-                .orElseGet(() -> Device.builder()
-                        .deviceId(deviceId)
-                        .user(user)
-                        .active(true)
-                        .build()
-                );
+        Device device = findDeviceByUser(user);
 
         device.setOfflineToken(UUID.randomUUID().toString());
         device.setOfflineExpiresAt(generateExpirationDate());
@@ -50,69 +40,49 @@ public class DeviceService {
         return buildOfflineActivationResponse(device);
     }
 
-    public OfflineActivationResponse renewOfflineMode(
-            String userEmail,
-            String deviceId
-    ) {
+    public DeviceStatusResponse getMyDevice(String userEmail) {
         User user = findSellerByEmail(userEmail);
-
-        Device device = deviceRepository
-                .findByUser_IdAndDeviceId(user.getId(), deviceId)
-                .orElseThrow(() ->
-                        new NotFoundException("Device not found")
-                );
-
-        if (!device.getActive()) {
-            throw new ForbiddenException("Device is not active");
-        }
-
-        device.setOfflineToken(UUID.randomUUID().toString());
-        device.setOfflineExpiresAt(generateExpirationDate());
-
-        deviceRepository.save(device);
-
-        return buildOfflineActivationResponse(device);
-    }
-
-    public DeviceStatusResponse getDeviceStatus(
-            String userEmail,
-            String deviceId
-    ) {
-        User user = findSellerByEmail(userEmail);
-
-        Device device = deviceRepository
-                .findByUser_IdAndDeviceId(user.getId(), deviceId)
-                .orElseThrow(() ->
-                        new NotFoundException("Device not found")
-                );
+        Device device = findDeviceByUser(user);
 
         return buildDeviceStatusResponse(device);
     }
 
-    public List<DeviceStatusResponse> getDevices(
-            String userEmail
+    public DeviceStatusResponse updateMyDevice(
+            String userEmail,
+            UpdateDeviceRequest request
     ) {
         User user = findSellerByEmail(userEmail);
+        Device device = findDeviceByUser(user);
 
-        return deviceRepository.findAllByUser_Id(user.getId())
-                .stream()
-                .map(this::buildDeviceStatusResponse)
-                .toList();
+        if (!device.getDeviceId().equals(request.getDeviceId())
+                && deviceRepository.existsByDeviceId(request.getDeviceId())) {
+            throw new BadRequestException("Device already registered");
+        }
+
+        device.setDeviceId(request.getDeviceId());
+        device.setOfflineToken(null);
+        device.setOfflineExpiresAt(null);
+        device.setActive(true);
+
+        deviceRepository.save(device);
+
+        return buildDeviceStatusResponse(device);
     }
 
     private User findSellerByEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new UnauthorizedException("Invalid token")
-                );
+                .orElseThrow(() -> new UnauthorizedException("Invalid token"));
 
         if (user.getRole() != UserRole.SELLER) {
-            throw new ForbiddenException(
-                    "Only sellers can access device resources"
-            );
+            throw new ForbiddenException("Only sellers can access device resources");
         }
 
         return user;
+    }
+
+    private Device findDeviceByUser(User user) {
+        return deviceRepository.findByUser_Id(user.getId())
+                .orElseThrow(() -> new NotFoundException("Device not found"));
     }
 
     private LocalDateTime generateExpirationDate() {
@@ -121,9 +91,7 @@ public class DeviceService {
         );
     }
 
-    private OfflineActivationResponse buildOfflineActivationResponse(
-            Device device
-    ) {
+    private OfflineActivationResponse buildOfflineActivationResponse(Device device) {
         return OfflineActivationResponse.builder()
                 .deviceId(device.getDeviceId())
                 .offlineToken(device.getOfflineToken())
@@ -132,9 +100,7 @@ public class DeviceService {
                 .build();
     }
 
-    private DeviceStatusResponse buildDeviceStatusResponse(
-            Device device
-    ) {
+    private DeviceStatusResponse buildDeviceStatusResponse(Device device) {
         boolean expired = device.getOfflineExpiresAt() == null
                 || device.getOfflineExpiresAt().isBefore(LocalDateTime.now());
 

@@ -14,11 +14,11 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.OracleDialect
     hibernate:
-      ddl-auto: none # <--- Otimizado: Desativa a validação lenta do Hibernate
-    show-sql: true
+      ddl-auto: none
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
   flyway:
     enabled: true
@@ -35,7 +35,7 @@ spring:
 
   cloud:
     inetutils:
-      ignored-interfaces: # <--- Otimizado: Ignora o timeout de rede do Spring Cloud
+      ignored-interfaces:
         - .*
 
 jwt:
@@ -48,3 +48,15 @@ offline:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+logging:
+  level:
+    root: warn
+    br.com.signal.signal_auth_service: info
+    org.hibernate.SQL: off
+    org.hibernate.orm.jdbc.bind: off
+    org.hibernate.type.descriptor.sql: off
+    org.springframework.security: warn
+    org.springframework.web: warn
+    org.flywaydb: info
+    com.zaxxer.hikari: warn

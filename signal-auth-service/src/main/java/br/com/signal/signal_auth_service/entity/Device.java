@@ -1,7 +1,5 @@
 package br.com.signal.signal_auth_service.entity;
 
-// entity/Device.java
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,10 +22,10 @@ public class Device {
     @Column(nullable = false, unique = true)
     private String deviceId;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String offlineToken;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime offlineExpiresAt;
 
     @Column(nullable = false)

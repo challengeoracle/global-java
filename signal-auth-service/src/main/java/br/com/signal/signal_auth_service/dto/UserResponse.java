@@ -24,4 +24,6 @@ public class UserResponse {
     private String role;
 
     private String storeName;
+
+    private String deviceId;
 }

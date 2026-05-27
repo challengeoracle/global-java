@@ -73,7 +73,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/me")
                         .authenticated()
 
-                        .requestMatchers("/devices/**")
+                        .requestMatchers("/device/**")
                         .hasRole("SELLER")
 
                         .anyRequest()

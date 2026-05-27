@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +35,11 @@ public class AuthService {
 
     public AuthResponse registerSeller(RegisterSellerRequest request) {
 
-        validateUserCreation(request.getEmail(), request.getCpf());
+        validateSellerCreation(
+                request.getEmail(),
+                request.getCpf(),
+                request.getDeviceId()
+        );
 
         User user = User.builder()
                 .name(request.getName())
@@ -59,12 +62,10 @@ public class AuthService {
 
         storeRepository.save(store);
 
-        String offlineToken = UUID.randomUUID().toString();
-
         Device device = Device.builder()
                 .deviceId(request.getDeviceId())
-                .offlineToken(offlineToken)
-                .offlineExpiresAt(LocalDateTime.now().plusHours(8))
+                .offlineToken(null)
+                .offlineExpiresAt(null)
                 .active(true)
                 .user(user)
                 .build();
@@ -75,13 +76,20 @@ public class AuthService {
 
         return AuthResponse.builder()
                 .token(token)
-                .user(buildUserResponse(user, Optional.of(store)))
+                .user(buildUserResponse(
+                        user,
+                        Optional.of(store),
+                        Optional.of(device)
+                ))
                 .build();
     }
 
     public AuthResponse registerCustomer(RegisterCustomerRequest request) {
 
-        validateUserCreation(request.getEmail(), request.getCpf());
+        validateUserCreation(
+                request.getEmail(),
+                request.getCpf()
+        );
 
         User user = User.builder()
                 .name(request.getName())
@@ -99,14 +107,20 @@ public class AuthService {
 
         return AuthResponse.builder()
                 .token(token)
-                .user(buildUserResponse(user, Optional.empty()))
+                .user(buildUserResponse(
+                        user,
+                        Optional.empty(),
+                        Optional.empty()
+                ))
                 .build();
     }
 
     public AuthResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() ->
+                        new UnauthorizedException("Invalid credentials")
+                );
 
         boolean passwordMatches = passwordEncoder.matches(
                 request.getPassword(),
@@ -118,34 +132,51 @@ public class AuthService {
         }
 
         Optional<Store> store = Optional.empty();
+        Optional<Device> device = Optional.empty();
 
         if (user.getRole() == UserRole.SELLER) {
             store = storeRepository.findBySeller_Id(user.getId());
+            device = deviceRepository.findByUser_Id(user.getId());
         }
 
         String token = jwtService.generateToken(user);
 
         return AuthResponse.builder()
                 .token(token)
-                .user(buildUserResponse(user, store))
+                .user(buildUserResponse(
+                        user,
+                        store,
+                        device
+                ))
                 .build();
     }
 
     public UserResponse me(String email) {
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Invalid token"));
+                .orElseThrow(() ->
+                        new UnauthorizedException("Invalid token")
+                );
 
         Optional<Store> store = Optional.empty();
+        Optional<Device> device = Optional.empty();
 
         if (user.getRole() == UserRole.SELLER) {
             store = storeRepository.findBySeller_Id(user.getId());
+            device = deviceRepository.findByUser_Id(user.getId());
         }
 
-        return buildUserResponse(user, store);
+        return buildUserResponse(
+                user,
+                store,
+                device
+        );
     }
 
-    private void validateUserCreation(String email, String cpf) {
+    private void validateUserCreation(
+            String email,
+            String cpf
+    ) {
 
         if (userRepository.existsByEmail(email)) {
             throw new BadRequestException("Email already registered");
@@ -156,9 +187,26 @@ public class AuthService {
         }
     }
 
+    private void validateSellerCreation(
+            String email,
+            String cpf,
+            String deviceId
+    ) {
+
+        validateUserCreation(
+                email,
+                cpf
+        );
+
+        if (deviceRepository.existsByDeviceId(deviceId)) {
+            throw new BadRequestException("Device already registered");
+        }
+    }
+
     private UserResponse buildUserResponse(
             User user,
-            Optional<Store> store
+            Optional<Store> store,
+            Optional<Device> device
     ) {
 
         return UserResponse.builder()
@@ -169,6 +217,7 @@ public class AuthService {
                 .phone(user.getPhone())
                 .role(user.getRole().name())
                 .storeName(store.map(Store::getName).orElse(null))
+                .deviceId(device.map(Device::getDeviceId).orElse(null))
                 .build();
     }
 }
