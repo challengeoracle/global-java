@@ -18,8 +18,16 @@ http://localhost:8081/swagger-ui.html
 
 # Fluxo 1: Cadastro de vendedor
 
-O vendedor é o usuário responsável por uma loja.  
-Ao se cadastrar, ele cria também a loja inicial.
+O vendedor é o usuário responsável por uma loja.
+
+Ao se cadastrar, ele cria:
+
+- usuário
+- loja inicial
+- dispositivo fixo vinculado à conta
+
+O modo offline não é ativado no cadastro.  
+O token offline só é gerado quando o vendedor ativa o modo offline.
 
 ## Endpoint
 
@@ -54,7 +62,8 @@ POST /auth/register/seller
 "cpf": "12345678901",
 "phone": "11999999999",
 "role": "SELLER",
-"storeName": "Mercado Signal"
+"storeName": "Mercado Signal",
+"deviceId": "device-seller-001"
 }
 }
 ```
@@ -64,6 +73,8 @@ POST /auth/register/seller
 # Fluxo 2: Cadastro de cliente
 
 O cliente é o usuário comum que acessa lojas, monta carrinhos e gera pedidos.
+
+Clientes não possuem dispositivo offline.
 
 ## Endpoint
 
@@ -95,7 +106,8 @@ POST /auth/register/customer
 "cpf": "98765432100",
 "phone": "11988888888",
 "role": "CUSTOMER",
-"storeName": null
+"storeName": null,
+"deviceId": null
 }
 }
 ```
@@ -104,10 +116,10 @@ POST /auth/register/customer
 
 # Fluxo 3: Login
 
-O login autentica o usuário e retorna apenas o JWT e os dados básicos do usuário.
+O login autentica o usuário e retorna apenas o JWT e os dados do usuário.
 
 O modo offline não é ativado no login.  
-O token offline é gerado somente no fluxo de dispositivo.
+O `offlineToken` não aparece nessa resposta.
 
 ## Endpoint
 
@@ -133,7 +145,7 @@ POST /auth/login
 }
 ```
 
-## Resposta esperada
+## Resposta esperada para vendedor
 
 ```
 {
@@ -145,7 +157,26 @@ POST /auth/login
 "cpf": "12345678901",
 "phone": "11999999999",
 "role": "SELLER",
-"storeName": "Mercado Signal"
+"storeName": "Mercado Signal",
+"deviceId": "device-seller-001"
+}
+}
+```
+
+## Resposta esperada para cliente
+
+```
+{
+"token": "jwt-gerado",
+"user": {
+"id": "uuid-do-usuario",
+"name": "João Silva",
+"email": "joao.customer@email.com",
+"cpf": "98765432100",
+"phone": "11988888888",
+"role": "CUSTOMER",
+"storeName": null,
+"deviceId": null
 }
 }
 ```
@@ -168,7 +199,7 @@ GET /auth/me
 Authorization: Bearer SEU_TOKEN_AQUI
 ```
 
-## Resposta esperada
+## Resposta esperada para vendedor
 
 ```
 {
@@ -179,6 +210,27 @@ Authorization: Bearer SEU_TOKEN_AQUI
 "phone": "11999999999",
 "role": "SELLER",
 "storeName": "Mercado Signal",
+"deviceId": "device-seller-001",
+"\_links": {
+"self": {
+"href": "http://localhost:8081/auth/me"
+}
+}
+}
+```
+
+## Resposta esperada para cliente
+
+```
+{
+"id": "uuid-do-usuario",
+"name": "João Silva",
+"email": "joao.customer@email.com",
+"cpf": "98765432100",
+"phone": "11988888888",
+"role": "CUSTOMER",
+"storeName": null,
+"deviceId": null,
 "\_links": {
 "self": {
 "href": "http://localhost:8081/auth/me"
@@ -189,23 +241,16 @@ Authorization: Bearer SEU_TOKEN_AQUI
 
 ---
 
-# Fluxo 5: Ativar modo offline
+# Fluxo 5: Consultar dispositivo do vendedor
 
-A ativação offline só pode ser feita por vendedores.
+Este endpoint retorna o dispositivo fixo vinculado ao vendedor autenticado.
 
-Este fluxo gera um `offlineToken` temporário para o dispositivo informado.  
-Esse token deve ser salvo pelo mobile e usado futuramente para registrar vendas offline.
+Clientes não podem acessar este endpoint.
 
 ## Endpoint
 
 ```
-POST /devices/{deviceId}/offline/activate
-```
-
-## Exemplo de URL
-
-```
-POST /devices/device-seller-001/offline/activate
+GET /device/me
 ```
 
 ## Header obrigatório
@@ -213,6 +258,56 @@ POST /devices/device-seller-001/offline/activate
 ```
 Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
 ```
+
+## Resposta esperada antes de ativar modo offline
+
+```
+{
+"deviceId": "device-seller-001",
+"active": true,
+"offlineEnabled": false,
+"expired": true,
+"offlineExpiresAt": null
+}
+```
+
+## Resposta esperada depois de ativar modo offline
+
+```
+{
+"deviceId": "device-seller-001",
+"active": true,
+"offlineEnabled": true,
+"expired": false,
+"offlineExpiresAt": "2026-05-28T10:30:00"
+}
+```
+
+---
+
+# Fluxo 6: Ativar modo offline
+
+A ativação offline só pode ser feita por vendedores.
+
+Este endpoint gera um `offlineToken` temporário para o dispositivo fixo do vendedor.
+
+Se o vendedor já tiver um token offline, este endpoint substitui o token antigo por um novo.
+
+## Endpoint
+
+```
+POST /device/offline/activate
+```
+
+## Header obrigatório
+
+```
+Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
+```
+
+## Body
+
+Não precisa enviar body.
 
 ## Resposta esperada
 
@@ -227,22 +322,16 @@ Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
 
 ---
 
-# Fluxo 6: Renovar modo offline
+# Fluxo 7: Atualizar dispositivo fixo do vendedor
 
-A renovação gera um novo `offlineToken` e uma nova data de expiração.
+Este endpoint permite trocar o `deviceId` vinculado ao vendedor.
 
-O token anterior deixa de ser o token válido do dispositivo.
+Ao trocar o dispositivo, o token offline atual é apagado e o vendedor precisa ativar o modo offline novamente.
 
 ## Endpoint
 
 ```
-POST /devices/{deviceId}/offline/renew
-```
-
-## Exemplo de URL
-
-```
-POST /devices/device-seller-001/offline/renew
+PATCH /device/me
 ```
 
 ## Header obrigatório
@@ -251,100 +340,40 @@ POST /devices/device-seller-001/offline/renew
 Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
 ```
 
-## Resposta esperada
+## Body
 
 ```
 {
-"deviceId": "device-seller-001",
-"offlineToken": "novo-token-offline",
-"offlineExpiresAt": "2026-05-28T10:30:00",
-"active": true
+"deviceId": "novo-device-id"
 }
 ```
 
----
-
-# Fluxo 7: Consultar um dispositivo
-
-Este endpoint mostra se um dispositivo está ativo e se o modo offline ainda é válido.
-
-Ele não retorna o `offlineToken`.
-
-## Endpoint
-
-```
-GET /devices/{deviceId}
-```
-
-## Exemplo de URL
-
-```
-GET /devices/device-seller-001
-```
-
-## Header obrigatório
-
-```
-Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
-```
-
 ## Resposta esperada
 
 ```
 {
-"deviceId": "device-seller-001",
+"deviceId": "novo-device-id",
 "active": true,
-"offlineEnabled": true,
-"expired": false,
-"offlineExpiresAt": "2026-05-28T10:30:00"
+"offlineEnabled": false,
+"expired": true,
+"offlineExpiresAt": null
 }
-```
-
----
-
-# Fluxo 8: Listar dispositivos do vendedor
-
-Lista todos os dispositivos vinculados à conta do vendedor autenticado.
-
-## Endpoint
-
-```
-GET /devices
-```
-
-## Header obrigatório
-
-```
-Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
-```
-
-## Resposta esperada
-
-```
-[
-{
-"deviceId": "device-seller-001",
-"active": true,
-"offlineEnabled": true,
-"expired": false,
-"offlineExpiresAt": "2026-05-28T10:30:00"
-}
-]
 ```
 
 ---
 
 # Como testar o fluxo completo
 
-1. Cadastre um vendedor.
-2. Faça login com o vendedor.
+1. Cadastre um vendedor em `/auth/register/seller`.
+2. Faça login em `/auth/login`.
 3. Copie o JWT retornado.
 4. Use o JWT no header `Authorization`.
 5. Chame `/auth/me` para validar a autenticação.
-6. Ative o modo offline em `/devices/{deviceId}/offline/activate`.
-7. Guarde o `offlineToken` retornado.
-8. Consulte `/devices/{deviceId}` para verificar se o modo offline está ativo.
-9. Renove em `/devices/{deviceId}/offline/renew` quando precisar de um novo token.
+6. Chame `/device/me` para ver o dispositivo fixo do vendedor.
+7. Chame `/device/offline/activate` para ativar o modo offline.
+8. Guarde o `offlineToken` retornado no mobile.
+9. Chame `/device/me` novamente para verificar se o modo offline está ativo.
+10. Use `PATCH /device/me` apenas se precisar trocar o dispositivo fixo do vendedor.
 
 ---
 
@@ -354,10 +383,16 @@ O JWT autentica o usuário na API.
 
 O `offlineToken` autoriza o dispositivo do vendedor a operar offline por tempo limitado.
 
+O cliente não possui dispositivo offline.
+
 O cliente não pode ativar modo offline.
+
+O vendedor possui apenas um dispositivo fixo no MVP.
 
 O login não retorna `offlineToken`.
 
-O `offlineToken` só é retornado na ativação ou renovação do modo offline.
+O `offlineToken` só é retornado em `/device/offline/activate`.
 
-As vendas offline ainda não são pagamentos confirmados. Elas serão salvas como pendentes e validadas posteriormente na sincronização.
+As vendas offline ainda não são pagamentos confirmados.
+
+As vendas offline serão salvas como pendentes e validadas posteriormente na sincronização.
