@@ -37,7 +37,7 @@ POST /auth/register/seller
 
 ## Body
 
-```
+```json
 {
 "name": "Mateus Lima",
 "email": "mateus.seller@email.com",
@@ -52,7 +52,7 @@ POST /auth/register/seller
 
 ## Resposta esperada
 
-```
+```json
 {
 "token": "jwt-gerado",
 "user": {
@@ -64,7 +64,7 @@ POST /auth/register/seller
 "role": "SELLER",
 "storeName": "Mercado Signal",
 "deviceId": "device-seller-001"
-}
+    }
 }
 ```
 
@@ -84,7 +84,7 @@ POST /auth/register/customer
 
 ## Body
 
-```
+```json
 {
 "name": "João Silva",
 "email": "joao.customer@email.com",
@@ -96,7 +96,7 @@ POST /auth/register/customer
 
 ## Resposta esperada
 
-```
+```json
 {
 "token": "jwt-gerado",
 "user": {
@@ -108,7 +108,7 @@ POST /auth/register/customer
 "role": "CUSTOMER",
 "storeName": null,
 "deviceId": null
-}
+    }
 }
 ```
 
@@ -138,7 +138,7 @@ POST /auth/login
 
 ## Body para cliente
 
-```
+```json
 {
 "email": "joao.customer@email.com",
 "password": "123456"
@@ -147,7 +147,7 @@ POST /auth/login
 
 ## Resposta esperada para vendedor
 
-```
+```json
 {
 "token": "jwt-gerado",
 "user": {
@@ -159,13 +159,13 @@ POST /auth/login
 "role": "SELLER",
 "storeName": "Mercado Signal",
 "deviceId": "device-seller-001"
-}
+    }
 }
 ```
 
 ## Resposta esperada para cliente
 
-```
+```json
 {
 "token": "jwt-gerado",
 "user": {
@@ -177,7 +177,7 @@ POST /auth/login
 "role": "CUSTOMER",
 "storeName": null,
 "deviceId": null
-}
+    }
 }
 ```
 
@@ -201,7 +201,7 @@ Authorization: Bearer SEU_TOKEN_AQUI
 
 ## Resposta esperada para vendedor
 
-```
+```json
 {
 "id": "uuid-do-usuario",
 "name": "Mateus Lima",
@@ -214,14 +214,14 @@ Authorization: Bearer SEU_TOKEN_AQUI
 "\_links": {
 "self": {
 "href": "http://localhost:8081/auth/me"
-}
-}
+      }
+    }
 }
 ```
 
 ## Resposta esperada para cliente
 
-```
+```json
 {
 "id": "uuid-do-usuario",
 "name": "João Silva",
@@ -234,8 +234,8 @@ Authorization: Bearer SEU_TOKEN_AQUI
 "\_links": {
 "self": {
 "href": "http://localhost:8081/auth/me"
-}
-}
+    }
+  }
 }
 ```
 
@@ -261,7 +261,7 @@ Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
 
 ## Resposta esperada antes de ativar modo offline
 
-```
+```json
 {
 "deviceId": "device-seller-001",
 "active": true,
@@ -273,7 +273,7 @@ Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
 
 ## Resposta esperada depois de ativar modo offline
 
-```
+```json
 {
 "deviceId": "device-seller-001",
 "active": true,
@@ -311,7 +311,7 @@ Não precisa enviar body.
 
 ## Resposta esperada
 
-```
+```json
 {
 "deviceId": "device-seller-001",
 "offlineToken": "uuid-token-offline",
@@ -342,7 +342,7 @@ Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
 
 ## Body
 
-```
+```json
 {
 "deviceId": "novo-device-id"
 }
@@ -350,7 +350,7 @@ Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
 
 ## Resposta esperada
 
-```
+```json
 {
 "deviceId": "novo-device-id",
 "active": true,
