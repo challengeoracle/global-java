@@ -4,15 +4,15 @@ Este documento explica como testar os principais fluxos atuais do serviço de au
 
 A API roda localmente em:
 
-@@@
+```
 http://localhost:8081
-@@@
+```
 
 A documentação Swagger fica disponível em:
 
-@@@
+```
 http://localhost:8081/swagger-ui.html
-@@@
+```
 
 ---
 
@@ -23,13 +23,13 @@ Ao se cadastrar, ele cria também a loja inicial.
 
 ## Endpoint
 
-@@@
+```
 POST /auth/register/seller
-@@@
+```
 
 ## Body
 
-@@@
+```
 {
 "name": "Mateus Lima",
 "email": "mateus.seller@email.com",
@@ -40,11 +40,11 @@ POST /auth/register/seller
 "storeCategory": "Mercado",
 "deviceId": "device-seller-001"
 }
-@@@
+```
 
 ## Resposta esperada
 
-@@@
+```
 {
 "token": "jwt-gerado",
 "user": {
@@ -57,7 +57,7 @@ POST /auth/register/seller
 "storeName": "Mercado Signal"
 }
 }
-@@@
+```
 
 ---
 
@@ -67,13 +67,13 @@ O cliente é o usuário comum que acessa lojas, monta carrinhos e gera pedidos.
 
 ## Endpoint
 
-@@@
+```
 POST /auth/register/customer
-@@@
+```
 
 ## Body
 
-@@@
+```
 {
 "name": "João Silva",
 "email": "joao.customer@email.com",
@@ -81,11 +81,11 @@ POST /auth/register/customer
 "cpf": "98765432100",
 "phone": "11988888888"
 }
-@@@
+```
 
 ## Resposta esperada
 
-@@@
+```
 {
 "token": "jwt-gerado",
 "user": {
@@ -98,7 +98,7 @@ POST /auth/register/customer
 "storeName": null
 }
 }
-@@@
+```
 
 ---
 
@@ -111,31 +111,31 @@ O token offline é gerado somente no fluxo de dispositivo.
 
 ## Endpoint
 
-@@@
+```
 POST /auth/login
-@@@
+```
 
 ## Body para vendedor
 
-@@@
+```
 {
 "email": "mateus.seller@email.com",
 "password": "123456"
 }
-@@@
+```
 
 ## Body para cliente
 
-@@@
+```
 {
 "email": "joao.customer@email.com",
 "password": "123456"
 }
-@@@
+```
 
 ## Resposta esperada
 
-@@@
+```
 {
 "token": "jwt-gerado",
 "user": {
@@ -148,7 +148,7 @@ POST /auth/login
 "storeName": "Mercado Signal"
 }
 }
-@@@
+```
 
 ---
 
@@ -158,19 +158,19 @@ Este endpoint serve para testar se o JWT está funcionando.
 
 ## Endpoint
 
-@@@
+```
 GET /auth/me
-@@@
+```
 
 ## Header obrigatório
 
-@@@
+```
 Authorization: Bearer SEU_TOKEN_AQUI
-@@@
+```
 
 ## Resposta esperada
 
-@@@
+```
 {
 "id": "uuid-do-usuario",
 "name": "Mateus Lima",
@@ -179,13 +179,13 @@ Authorization: Bearer SEU_TOKEN_AQUI
 "phone": "11999999999",
 "role": "SELLER",
 "storeName": "Mercado Signal",
-"_links": {
+"\_links": {
 "self": {
 "href": "http://localhost:8081/auth/me"
 }
 }
 }
-@@@
+```
 
 ---
 
@@ -198,32 +198,32 @@ Esse token deve ser salvo pelo mobile e usado futuramente para registrar vendas 
 
 ## Endpoint
 
-@@@
+```
 POST /devices/{deviceId}/offline/activate
-@@@
+```
 
 ## Exemplo de URL
 
-@@@
+```
 POST /devices/device-seller-001/offline/activate
-@@@
+```
 
 ## Header obrigatório
 
-@@@
+```
 Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
-@@@
+```
 
 ## Resposta esperada
 
-@@@
+```
 {
 "deviceId": "device-seller-001",
 "offlineToken": "uuid-token-offline",
 "offlineExpiresAt": "2026-05-28T10:30:00",
 "active": true
 }
-@@@
+```
 
 ---
 
@@ -235,32 +235,32 @@ O token anterior deixa de ser o token válido do dispositivo.
 
 ## Endpoint
 
-@@@
+```
 POST /devices/{deviceId}/offline/renew
-@@@
+```
 
 ## Exemplo de URL
 
-@@@
+```
 POST /devices/device-seller-001/offline/renew
-@@@
+```
 
 ## Header obrigatório
 
-@@@
+```
 Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
-@@@
+```
 
 ## Resposta esperada
 
-@@@
+```
 {
 "deviceId": "device-seller-001",
 "offlineToken": "novo-token-offline",
 "offlineExpiresAt": "2026-05-28T10:30:00",
 "active": true
 }
-@@@
+```
 
 ---
 
@@ -272,25 +272,25 @@ Ele não retorna o `offlineToken`.
 
 ## Endpoint
 
-@@@
+```
 GET /devices/{deviceId}
-@@@
+```
 
 ## Exemplo de URL
 
-@@@
+```
 GET /devices/device-seller-001
-@@@
+```
 
 ## Header obrigatório
 
-@@@
+```
 Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
-@@@
+```
 
 ## Resposta esperada
 
-@@@
+```
 {
 "deviceId": "device-seller-001",
 "active": true,
@@ -298,7 +298,7 @@ Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
 "expired": false,
 "offlineExpiresAt": "2026-05-28T10:30:00"
 }
-@@@
+```
 
 ---
 
@@ -308,19 +308,19 @@ Lista todos os dispositivos vinculados à conta do vendedor autenticado.
 
 ## Endpoint
 
-@@@
+```
 GET /devices
-@@@
+```
 
 ## Header obrigatório
 
-@@@
+```
 Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
-@@@
+```
 
 ## Resposta esperada
 
-@@@
+```
 [
 {
 "deviceId": "device-seller-001",
@@ -330,7 +330,7 @@ Authorization: Bearer SEU_TOKEN_DO_VENDEDOR
 "offlineExpiresAt": "2026-05-28T10:30:00"
 }
 ]
-@@@
+```
 
 ---
 
