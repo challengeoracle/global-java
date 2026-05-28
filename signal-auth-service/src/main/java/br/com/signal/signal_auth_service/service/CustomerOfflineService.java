@@ -17,6 +17,11 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * @deprecated Legacy customer offline session tokens. Auth identity flows use JWT + /auth/me.
+ *             Offline session activation is not required for sales operations.
+ */
+@Deprecated
 @Service
 @RequiredArgsConstructor
 public class CustomerOfflineService {

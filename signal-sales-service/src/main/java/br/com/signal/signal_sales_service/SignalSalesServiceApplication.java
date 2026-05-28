@@ -1,6 +1,6 @@
 package br.com.signal.signal_sales_service;
 
-import br.com.signal.signal_sales_service.config.JwtProperties;
+import br.com.signal.signal_sales_service.shared.config.JwtProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

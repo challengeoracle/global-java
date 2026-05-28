@@ -73,6 +73,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/me")
                         .authenticated()
 
+                        // Legacy offline endpoints — kept for backward compatibility, not required for sales
                         .requestMatchers("/device/**")
                         .hasRole("SELLER")
 
