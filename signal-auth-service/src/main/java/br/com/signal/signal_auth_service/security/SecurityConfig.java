@@ -76,6 +76,9 @@ public class SecurityConfig {
                         .requestMatchers("/device/**")
                         .hasRole("SELLER")
 
+                        .requestMatchers("/customer/offline/**")
+                        .hasRole("CUSTOMER")
+
                         .anyRequest()
                         .authenticated()
                 )
