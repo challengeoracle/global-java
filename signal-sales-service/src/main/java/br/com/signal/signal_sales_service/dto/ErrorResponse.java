@@ -1,4 +1,4 @@
-package br.com.signal.signal_auth_service.dto;
+package br.com.signal.signal_sales_service.dto;
 
 import lombok.Builder;
 import lombok.Getter;
