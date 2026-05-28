@@ -102,6 +102,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/product", "/product/**")
                         .hasRole("SELLER")
 
+                        .requestMatchers(HttpMethod.POST, "/catalog/sync")
+                        .hasRole("SELLER")
+
                         .anyRequest()
                         .authenticated()
                 )
