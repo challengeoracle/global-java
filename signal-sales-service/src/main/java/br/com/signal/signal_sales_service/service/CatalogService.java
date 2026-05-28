@@ -27,6 +27,20 @@ public class CatalogService {
     private final ProductRepository productRepository;
     private final CatalogSyncLogRepository catalogSyncLogRepository;
 
+    public CatalogResponse findMyCatalog(String authorization) {
+        AuthUserResponse authUser = authClient.me(authorization);
+
+        if (!"SELLER".equals(authUser.getRole())) {
+            throw new BadRequestException("Only sellers can access their own catalog");
+        }
+
+        if (authUser.getStoreId() == null) {
+            throw new BadRequestException("Seller does not have a store");
+        }
+
+        return findCatalogByStore(authUser.getStoreId());
+    }
+
     public CatalogResponse findCatalogByStore(UUID storeId) {
         List<ProductCategory> categories =
                 productCategoryRepository.findByActiveTrueOrderByNameAsc();

@@ -18,6 +18,15 @@ public class CatalogController {
 
     private final CatalogService catalogService;
 
+    @GetMapping("/me")
+    public ResponseEntity<CatalogResponse> findMyCatalog(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                catalogService.findMyCatalog(authorization)
+        );
+    }
+
     @GetMapping("/store/{storeId}")
     public ResponseEntity<CatalogResponse> findCatalogByStore(
             @PathVariable UUID storeId

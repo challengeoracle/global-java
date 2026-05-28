@@ -102,8 +102,26 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/product", "/product/**")
                         .hasRole("SELLER")
 
+                        .requestMatchers(HttpMethod.GET, "/catalog/me")
+                        .hasRole("SELLER")
+
+                        .requestMatchers(HttpMethod.GET, "/catalog", "/catalog/**")
+                        .authenticated()
+
                         .requestMatchers(HttpMethod.POST, "/catalog/sync")
                         .hasRole("SELLER")
+
+                        .requestMatchers(HttpMethod.POST, "/order/sync")
+                        .hasRole("SELLER")
+
+                        .requestMatchers(HttpMethod.GET, "/order/me")
+                        .authenticated()
+
+                        .requestMatchers(HttpMethod.POST, "/order", "/order/**")
+                        .authenticated()
+
+                        .requestMatchers(HttpMethod.GET, "/order", "/order/**")
+                        .authenticated()
 
                         .anyRequest()
                         .authenticated()
