@@ -216,6 +216,7 @@ public class AuthService {
                 .cpf(user.getCpf())
                 .phone(user.getPhone())
                 .role(user.getRole().name())
+                .storeId(store.map(Store::getId).orElse(null))
                 .storeName(store.map(Store::getName).orElse(null))
                 .deviceId(device.map(Device::getDeviceId).orElse(null))
                 .build();
