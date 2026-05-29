@@ -12,6 +12,7 @@ import java.util.UUID;
 public class CatalogSyncItemResponse {
 
     private UUID productId;
+    private UUID categoryId;
     private String status;
     private String message;
     private Integer currentStockQuantity;

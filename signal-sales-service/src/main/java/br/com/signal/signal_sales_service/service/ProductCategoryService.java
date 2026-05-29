@@ -10,7 +10,6 @@ import br.com.signal.signal_sales_service.repository.ProductCategoryRepository;
 import br.com.signal.signal_sales_service.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,29 +19,22 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProductCategoryService {
 
-    private final AuthClient authClient;
     private final ProductCategoryRepository productCategoryRepository;
     private final ProductRepository productRepository;
+    private final AuthClient authClient;
 
-    @Transactional
-    public CategoryResponse create(
-            CreateCategoryRequest request,
-            String authorization
-    ) {
+    public CategoryResponse create(CreateCategoryRequest request, String authorization) {
         AuthUserResponse authUser = getSeller(authorization);
-
         String categoryName = request.getName().trim();
 
-        if (productCategoryRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(
-                authUser.getStoreId(),
-                categoryName
-        )) {
+        if (productCategoryRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(authUser.getStoreId(), categoryName)) {
             throw new BadRequestException("Category already exists for this store");
         }
 
         LocalDateTime now = LocalDateTime.now();
 
         ProductCategory category = ProductCategory.builder()
+                .id(UUID.randomUUID())
                 .storeId(authUser.getStoreId())
                 .name(categoryName)
                 .description(request.getDescription())
@@ -66,22 +58,12 @@ public class ProductCategoryService {
                 .toList();
     }
 
-    public CategoryWithProductsResponse findMyCategoryById(
-            UUID id,
-            String authorization
-    ) {
+    public CategoryWithProductsResponse findMyCategoryById(UUID id, String authorization) {
         AuthUserResponse authUser = getSeller(authorization);
-
-        ProductCategory category = findCategoryForStore(
-                id,
-                authUser.getStoreId()
-        );
+        ProductCategory category = findCategoryForStore(id, authUser.getStoreId());
 
         List<ProductResponse> products = productRepository
-                .findByStoreIdAndCategory_IdAndActiveTrueOrderByNameAsc(
-                        authUser.getStoreId(),
-                        id
-                )
+                .findByStoreIdAndCategory_IdAndActiveTrueOrderByNameAsc(authUser.getStoreId(), id)
                 .stream()
                 .map(this::toProductResponse)
                 .toList();
@@ -98,27 +80,21 @@ public class ProductCategoryService {
                 .build();
     }
 
-    @Transactional
-    public CategoryResponse update(
-            UUID id,
-            UpdateCategoryRequest request,
-            String authorization
-    ) {
+    public CategoryResponse update(UUID id, UpdateCategoryRequest request, String authorization) {
         AuthUserResponse authUser = getSeller(authorization);
-
-        ProductCategory category = findCategoryForStore(
-                id,
-                authUser.getStoreId()
-        );
+        ProductCategory category = findCategoryForStore(id, authUser.getStoreId());
 
         String categoryName = request.getName().trim();
 
-        boolean sameName = category.getName().equalsIgnoreCase(categoryName);
+        boolean duplicatedName = productCategoryRepository
+                .findByStoreIdAndActiveTrueOrderByNameAsc(authUser.getStoreId())
+                .stream()
+                .anyMatch(existing ->
+                        !existing.getId().equals(id)
+                                && existing.getName().equalsIgnoreCase(categoryName)
+                );
 
-        if (!sameName && productCategoryRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(
-                authUser.getStoreId(),
-                categoryName
-        )) {
+        if (duplicatedName) {
             throw new BadRequestException("Category already exists for this store");
         }
 
@@ -131,54 +107,21 @@ public class ProductCategoryService {
         return toCategoryResponse(category);
     }
 
-    @Transactional
-    public void deactivate(
-            UUID id,
-            String authorization
-    ) {
+    public void deactivate(UUID id, String authorization) {
         AuthUserResponse authUser = getSeller(authorization);
-
-        ProductCategory category = findCategoryForStore(
-                id,
-                authUser.getStoreId()
-        );
-
-        LocalDateTime now = LocalDateTime.now();
-
-        category.setActive(false);
-        category.setUpdatedAt(now);
+        ProductCategory category = findCategoryForStore(id, authUser.getStoreId());
 
         List<Product> products = productRepository
-                .findByStoreIdAndCategory_IdOrderByNameAsc(
-                        authUser.getStoreId(),
-                        id
-                );
+                .findByStoreIdAndCategory_IdAndActiveTrueOrderByNameAsc(authUser.getStoreId(), id);
 
-        products.forEach(product -> {
-            product.setActive(false);
-            product.setUpdatedAt(now);
-        });
+        if (!products.isEmpty()) {
+            throw new BadRequestException("Cannot deactivate category with active products");
+        }
+
+        category.setActive(false);
+        category.setUpdatedAt(LocalDateTime.now());
 
         productCategoryRepository.save(category);
-        productRepository.saveAll(products);
-    }
-
-    private ProductCategory findCategoryForStore(
-            UUID categoryId,
-            UUID storeId
-    ) {
-        ProductCategory category = productCategoryRepository.findById(categoryId)
-                .orElseThrow(() -> new NotFoundException("Category not found"));
-
-        if (!storeId.equals(category.getStoreId())) {
-            throw new BadRequestException("Category does not belong to seller store");
-        }
-
-        if (!Boolean.TRUE.equals(category.getActive())) {
-            throw new BadRequestException("Category is inactive");
-        }
-
-        return category;
     }
 
     private AuthUserResponse getSeller(String authorization) {
@@ -193,6 +136,21 @@ public class ProductCategoryService {
         }
 
         return authUser;
+    }
+
+    private ProductCategory findCategoryForStore(UUID categoryId, UUID storeId) {
+        ProductCategory category = productCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new NotFoundException("Category not found"));
+
+        if (!storeId.equals(category.getStoreId())) {
+            throw new BadRequestException("Category does not belong to seller store");
+        }
+
+        if (!Boolean.TRUE.equals(category.getActive())) {
+            throw new BadRequestException("Category is inactive");
+        }
+
+        return category;
     }
 
     private CategoryResponse toCategoryResponse(ProductCategory category) {

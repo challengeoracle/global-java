@@ -41,16 +41,13 @@ public class CatalogService {
     }
 
     public CatalogResponse findCatalogByStore(UUID storeId) {
-        List<ProductCategory> categories =
-                productCategoryRepository.findByStoreIdAndActiveTrueOrderByNameAsc(storeId);
+        List<ProductCategory> categories = productCategoryRepository
+                .findByStoreIdAndActiveTrueOrderByNameAsc(storeId);
 
         List<CatalogCategoryResponse> categoryResponses = categories.stream()
                 .map(category -> {
                     List<CatalogProductResponse> products = productRepository
-                            .findByStoreIdAndCategory_IdAndActiveTrueOrderByNameAsc(
-                                    storeId,
-                                    category.getId()
-                            )
+                            .findByStoreIdAndCategory_IdAndActiveTrueOrderByNameAsc(storeId, category.getId())
                             .stream()
                             .map(this::toCatalogProductResponse)
                             .toList();
@@ -75,10 +72,7 @@ public class CatalogService {
                 .build();
     }
 
-    public CatalogSyncResponse syncCatalog(
-            CatalogSyncRequest request,
-            String authorization
-    ) {
+    public CatalogSyncResponse syncCatalog(CatalogSyncRequest request, String authorization) {
         AuthUserResponse authUser = authClient.me(authorization);
 
         if (!"SELLER".equals(authUser.getRole())) {
@@ -114,30 +108,126 @@ public class CatalogService {
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
-        try {
-            return switch (item.getOperation()) {
-                case PRODUCT_CREATE -> createProductFromSync(storeId, deviceId, item, syncedAt);
-                case PRODUCT_UPDATE -> updateProductFromSync(storeId, deviceId, item, syncedAt);
-                case PRODUCT_DEACTIVATE -> deactivateProductFromSync(storeId, deviceId, item, syncedAt);
-                case STOCK_UPDATE -> updateStockFromSync(storeId, deviceId, item, syncedAt);
-            };
-        } catch (RuntimeException ex) {
-            createLog(
-                    storeId,
-                    deviceId,
-                    item,
-                    null,
-                    syncedAt,
-                    "REJECTED",
-                    ex.getMessage()
-            );
+        return switch (item.getOperation()) {
+            case CATEGORY_CREATE -> createCategoryFromSync(storeId, deviceId, item, syncedAt);
+            case CATEGORY_UPDATE -> updateCategoryFromSync(storeId, deviceId, item, syncedAt);
+            case CATEGORY_DEACTIVATE -> deactivateCategoryFromSync(storeId, deviceId, item, syncedAt);
+            case PRODUCT_CREATE -> createProductFromSync(storeId, deviceId, item, syncedAt);
+            case PRODUCT_UPDATE -> updateProductFromSync(storeId, deviceId, item, syncedAt);
+            case PRODUCT_DEACTIVATE -> deactivateProductFromSync(storeId, deviceId, item, syncedAt);
+            case STOCK_UPDATE -> updateStockFromSync(storeId, deviceId, item, syncedAt);
+        };
+    }
+
+    private CatalogSyncItemResponse createCategoryFromSync(
+            UUID storeId,
+            String deviceId,
+            CatalogSyncItemRequest item,
+            LocalDateTime syncedAt
+    ) {
+        if (item.getCategoryId() == null) {
+            throw new BadRequestException("Category id is required to create category");
+        }
+
+        if (item.getName() == null || item.getName().isBlank()) {
+            throw new BadRequestException("Category name is required");
+        }
+
+        String categoryName = item.getName().trim();
+
+        if (productCategoryRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(storeId, categoryName)) {
+            createLog(storeId, deviceId, item, null, syncedAt, "DUPLICATE", "Category already exists for this store");
 
             return CatalogSyncItemResponse.builder()
-                    .productId(item.getProductId())
-                    .status("REJECTED")
-                    .message(ex.getMessage())
+                    .categoryId(item.getCategoryId())
+                    .status("DUPLICATE")
+                    .message("Category already exists for this store")
                     .build();
         }
+
+        ProductCategory category = ProductCategory.builder()
+                .id(item.getCategoryId())
+                .storeId(storeId)
+                .name(categoryName)
+                .description(item.getDescription())
+                .active(true)
+                .createdAt(syncedAt)
+                .updatedAt(syncedAt)
+                .build();
+
+        productCategoryRepository.save(category);
+
+        createLog(storeId, deviceId, item, null, syncedAt, "APPLIED", "Category created successfully");
+
+        return CatalogSyncItemResponse.builder()
+                .categoryId(category.getId())
+                .status("APPLIED")
+                .message("Category created successfully")
+                .build();
+    }
+
+    private CatalogSyncItemResponse updateCategoryFromSync(
+            UUID storeId,
+            String deviceId,
+            CatalogSyncItemRequest item,
+            LocalDateTime syncedAt
+    ) {
+        ProductCategory category = findCategoryForStore(item.getCategoryId(), storeId);
+
+        if (item.getName() != null && !item.getName().isBlank()) {
+            category.setName(item.getName().trim());
+        }
+
+        if (item.getDescription() != null) {
+            category.setDescription(item.getDescription());
+        }
+
+        category.setUpdatedAt(syncedAt);
+
+        productCategoryRepository.save(category);
+
+        createLog(storeId, deviceId, item, null, syncedAt, "APPLIED", "Category updated successfully");
+
+        return CatalogSyncItemResponse.builder()
+                .categoryId(category.getId())
+                .status("APPLIED")
+                .message("Category updated successfully")
+                .build();
+    }
+
+    private CatalogSyncItemResponse deactivateCategoryFromSync(
+            UUID storeId,
+            String deviceId,
+            CatalogSyncItemRequest item,
+            LocalDateTime syncedAt
+    ) {
+        ProductCategory category = findCategoryForStore(item.getCategoryId(), storeId);
+
+        List<Product> activeProducts = productRepository
+                .findByStoreIdAndCategory_IdAndActiveTrueOrderByNameAsc(storeId, category.getId());
+
+        if (!activeProducts.isEmpty()) {
+            createLog(storeId, deviceId, item, null, syncedAt, "REJECTED", "Cannot deactivate category with active products");
+
+            return CatalogSyncItemResponse.builder()
+                    .categoryId(category.getId())
+                    .status("REJECTED")
+                    .message("Cannot deactivate category with active products")
+                    .build();
+        }
+
+        category.setActive(false);
+        category.setUpdatedAt(syncedAt);
+
+        productCategoryRepository.save(category);
+
+        createLog(storeId, deviceId, item, null, syncedAt, "APPLIED", "Category deactivated successfully");
+
+        return CatalogSyncItemResponse.builder()
+                .categoryId(category.getId())
+                .status("APPLIED")
+                .message("Category deactivated successfully")
+                .build();
     }
 
     private CatalogSyncItemResponse createProductFromSync(
@@ -148,15 +238,9 @@ public class CatalogService {
     ) {
         validateCreateProductItem(item);
 
-        ProductCategory category = productCategoryRepository.findById(item.getCategoryId())
-                .orElseThrow(() -> new NotFoundException("Category not found"));
+        ProductCategory category = findCategoryForStore(item.getCategoryId(), storeId);
 
-        validateCategoryForStore(category, storeId);
-
-        if (productRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(
-                storeId,
-                item.getName()
-        )) {
+        if (productRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(storeId, item.getName())) {
             throw new BadRequestException("Product already exists for this store");
         }
 
@@ -174,18 +258,11 @@ public class CatalogService {
 
         productRepository.save(product);
 
-        createLog(
-                storeId,
-                deviceId,
-                item,
-                product,
-                syncedAt,
-                "APPLIED",
-                "Product created successfully"
-        );
+        createLog(storeId, deviceId, item, product, syncedAt, "APPLIED", "Product created successfully");
 
         return CatalogSyncItemResponse.builder()
                 .productId(product.getId())
+                .categoryId(category.getId())
                 .status("APPLIED")
                 .message("Product created successfully")
                 .currentStockQuantity(product.getStockQuantity())
@@ -201,11 +278,7 @@ public class CatalogService {
         Product product = findProductForStore(item.getProductId(), storeId);
 
         if (item.getCategoryId() != null) {
-            ProductCategory category = productCategoryRepository.findById(item.getCategoryId())
-                    .orElseThrow(() -> new NotFoundException("Category not found"));
-
-            validateCategoryForStore(category, storeId);
-
+            ProductCategory category = findCategoryForStore(item.getCategoryId(), storeId);
             product.setCategory(category);
         }
 
@@ -237,18 +310,11 @@ public class CatalogService {
 
         productRepository.save(product);
 
-        createLog(
-                storeId,
-                deviceId,
-                item,
-                product,
-                syncedAt,
-                "APPLIED",
-                "Product updated successfully"
-        );
+        createLog(storeId, deviceId, item, product, syncedAt, "APPLIED", "Product updated successfully");
 
         return CatalogSyncItemResponse.builder()
                 .productId(product.getId())
+                .categoryId(product.getCategory().getId())
                 .status("APPLIED")
                 .message("Product updated successfully")
                 .currentStockQuantity(product.getStockQuantity())
@@ -268,18 +334,11 @@ public class CatalogService {
 
         productRepository.save(product);
 
-        createLog(
-                storeId,
-                deviceId,
-                item,
-                product,
-                syncedAt,
-                "APPLIED",
-                "Product deactivated successfully"
-        );
+        createLog(storeId, deviceId, item, product, syncedAt, "APPLIED", "Product deactivated successfully");
 
         return CatalogSyncItemResponse.builder()
                 .productId(product.getId())
+                .categoryId(product.getCategory().getId())
                 .status("APPLIED")
                 .message("Product deactivated successfully")
                 .currentStockQuantity(product.getStockQuantity())
@@ -306,18 +365,11 @@ public class CatalogService {
         int newStock = currentStock + item.getQuantityDelta();
 
         if (newStock < 0) {
-            createLog(
-                    storeId,
-                    deviceId,
-                    item,
-                    product,
-                    syncedAt,
-                    "REJECTED",
-                    "Stock quantity cannot be negative"
-            );
+            createLog(storeId, deviceId, item, product, syncedAt, "REJECTED", "Stock quantity cannot be negative");
 
             return CatalogSyncItemResponse.builder()
                     .productId(product.getId())
+                    .categoryId(product.getCategory().getId())
                     .status("REJECTED")
                     .message("Stock quantity cannot be negative")
                     .currentStockQuantity(currentStock)
@@ -329,22 +381,34 @@ public class CatalogService {
 
         productRepository.save(product);
 
-        createLog(
-                storeId,
-                deviceId,
-                item,
-                product,
-                syncedAt,
-                "APPLIED",
-                "Stock updated successfully"
-        );
+        createLog(storeId, deviceId, item, product, syncedAt, "APPLIED", "Stock updated successfully");
 
         return CatalogSyncItemResponse.builder()
                 .productId(product.getId())
+                .categoryId(product.getCategory().getId())
                 .status("APPLIED")
                 .message("Stock updated successfully")
                 .currentStockQuantity(newStock)
                 .build();
+    }
+
+    private ProductCategory findCategoryForStore(UUID categoryId, UUID storeId) {
+        if (categoryId == null) {
+            throw new BadRequestException("Category id is required");
+        }
+
+        ProductCategory category = productCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new NotFoundException("Category not found"));
+
+        if (!storeId.equals(category.getStoreId())) {
+            throw new BadRequestException("Category does not belong to seller store");
+        }
+
+        if (!Boolean.TRUE.equals(category.getActive())) {
+            throw new BadRequestException("Category is inactive");
+        }
+
+        return category;
     }
 
     private Product findProductForStore(UUID productId, UUID storeId) {
@@ -355,24 +419,11 @@ public class CatalogService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
 
-        if (!storeId.equals(product.getStoreId())) {
+        if (!product.getStoreId().equals(storeId)) {
             throw new BadRequestException("Product does not belong to seller store");
         }
 
         return product;
-    }
-
-    private void validateCategoryForStore(
-            ProductCategory category,
-            UUID storeId
-    ) {
-        if (!storeId.equals(category.getStoreId())) {
-            throw new BadRequestException("Category does not belong to seller store");
-        }
-
-        if (!Boolean.TRUE.equals(category.getActive())) {
-            throw new BadRequestException("Category is inactive");
-        }
     }
 
     private void validateCreateProductItem(CatalogSyncItemRequest item) {
@@ -389,7 +440,7 @@ public class CatalogService {
         }
 
         if (item.getStockQuantity() == null || item.getStockQuantity() < 0) {
-            throw new BadRequestException("Valid stock quantity is required to create product");
+            throw new BadRequestException("Valid stock quantity is required");
         }
     }
 
