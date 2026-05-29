@@ -36,10 +36,7 @@ public class OrderService {
     private final OrderEventPublisher orderEventPublisher;
 
     @Transactional
-    public OrderResponse createOnlineOrder(
-            CreateOrderRequest request,
-            String authorization
-    ) {
+    public OrderResponse createOnlineOrder(CreateOrderRequest request, String authorization) {
         AuthUserResponse authUser = authClient.me(authorization);
 
         UUID storeId = resolveStoreId(request.getStoreId(), authUser);
@@ -63,10 +60,7 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderSyncResponse syncOfflineOrders(
-            OrderSyncRequest request,
-            String authorization
-    ) {
+    public OrderSyncResponse syncOfflineOrders(OrderSyncRequest request, String authorization) {
         AuthUserResponse authUser = authClient.me(authorization);
 
         if (!"SELLER".equals(authUser.getRole())) {
@@ -136,10 +130,7 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponse updatePaymentStatus(
-            UUID orderId,
-            PaymentStatus paymentStatus
-    ) {
+    public OrderResponse updatePaymentStatus(UUID orderId, PaymentStatus paymentStatus) {
         SalesOrder order = salesOrderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found"));
 
@@ -158,12 +149,9 @@ public class OrderService {
             LocalDateTime syncedAt
     ) {
         try {
-            if (salesOrderRepository.existsByDeviceIdAndLocalOrderId(
-                    deviceId,
-                    orderRequest.getLocalOrderId()
-            )) {
+            if (salesOrderRepository.existsByLocalOrderId(orderRequest.getLocalOrderId())) {
                 SalesOrder existing = salesOrderRepository
-                        .findByDeviceIdAndLocalOrderId(deviceId, orderRequest.getLocalOrderId())
+                        .findByLocalOrderId(orderRequest.getLocalOrderId())
                         .orElseThrow(() -> new NotFoundException("Order not found"));
 
                 createOrderSyncLog(
@@ -221,7 +209,6 @@ public class OrderService {
                     .syncStatus(order.getSyncStatus().name())
                     .totalAmount(order.getTotalAmount())
                     .build();
-
         } catch (RuntimeException ex) {
             createOrderSyncLog(
                     authUser.getStoreId(),
@@ -266,6 +253,7 @@ public class OrderService {
                 .syncStatus(syncStatus)
                 .totalAmount(BigDecimal.ZERO)
                 .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .offlineCreatedAt(offlineCreatedAt)
                 .build();
 
@@ -339,7 +327,7 @@ public class OrderService {
                 .localOrderId(localOrderId)
                 .deviceId(deviceId)
                 .status(status)
-                .message(message)
+                .message(message != null && message.length() > 255 ? message.substring(0, 255) : message)
                 .syncedAt(syncedAt)
                 .build();
 

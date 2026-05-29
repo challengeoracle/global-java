@@ -16,4 +16,8 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, UUID> {
     boolean existsByDeviceIdAndLocalOrderId(String deviceId, String localOrderId);
 
     Optional<SalesOrder> findByDeviceIdAndLocalOrderId(String deviceId, String localOrderId);
+
+    boolean existsByLocalOrderId(String localOrderId);
+
+    Optional<SalesOrder> findByLocalOrderId(String localOrderId);
 }
