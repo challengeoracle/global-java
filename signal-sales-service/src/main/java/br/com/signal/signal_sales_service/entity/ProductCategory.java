@@ -20,6 +20,9 @@ public class ProductCategory {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
+    @Column(name = "STORE_ID")
+    private UUID storeId;
+
     @Column(name = "NAME", nullable = false, length = 100)
     private String name;
 
@@ -31,4 +34,7 @@ public class ProductCategory {
 
     @Column(name = "CREATED_AT", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "UPDATED_AT")
+    private LocalDateTime updatedAt;
 }

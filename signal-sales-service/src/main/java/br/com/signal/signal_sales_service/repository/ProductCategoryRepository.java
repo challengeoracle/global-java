@@ -10,7 +10,10 @@ import java.util.UUID;
 @Repository
 public interface ProductCategoryRepository extends JpaRepository<ProductCategory, UUID> {
 
-    List<ProductCategory> findByActiveTrueOrderByNameAsc();
+    List<ProductCategory> findByStoreIdAndActiveTrueOrderByNameAsc(UUID storeId);
 
-    boolean existsByNameIgnoreCase(String name);
+    boolean existsByStoreIdAndNameIgnoreCaseAndActiveTrue(
+            UUID storeId,
+            String name
+    );
 }

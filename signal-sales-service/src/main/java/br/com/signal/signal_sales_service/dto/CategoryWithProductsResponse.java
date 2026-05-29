@@ -19,4 +19,6 @@ public class CategoryWithProductsResponse {
     private Boolean active;
     private LocalDateTime createdAt;
     private List<ProductResponse> products;
+    private UUID storeId;
+    private LocalDateTime updatedAt;
 }

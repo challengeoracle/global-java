@@ -21,4 +21,8 @@ public class CategoryResponse {
     private Boolean active;
 
     private LocalDateTime createdAt;
+
+    private UUID storeId;
+
+    private LocalDateTime updatedAt;
 }

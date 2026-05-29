@@ -16,6 +16,11 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     List<Product> findByCategory_IdAndActiveTrueOrderByNameAsc(UUID categoryId);
 
+    List<Product> findByStoreIdAndCategory_IdOrderByNameAsc(
+            UUID storeId,
+            UUID categoryId
+    );
+
     List<Product> findByStoreIdAndCategory_IdAndActiveTrueOrderByNameAsc(
             UUID storeId,
             UUID categoryId

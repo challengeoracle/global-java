@@ -14,9 +14,11 @@ import java.util.UUID;
 public class CatalogCategoryResponse {
 
     private UUID id;
+    private UUID storeId;
     private String name;
     private String description;
     private Boolean active;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private List<CatalogProductResponse> products;
 }

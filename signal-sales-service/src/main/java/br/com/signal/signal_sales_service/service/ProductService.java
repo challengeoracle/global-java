@@ -30,22 +30,12 @@ public class ProductService {
             CreateProductRequest request,
             String authorization
     ) {
-        AuthUserResponse authUser = authClient.me(authorization);
-
-        if (!"SELLER".equals(authUser.getRole())) {
-            throw new BadRequestException("Only sellers can create products");
-        }
-
-        if (authUser.getStoreId() == null) {
-            throw new BadRequestException("Seller does not have a store");
-        }
+        AuthUserResponse authUser = getSeller(authorization);
 
         ProductCategory category = productCategoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new NotFoundException("Category not found"));
 
-        if (!Boolean.TRUE.equals(category.getActive())) {
-            throw new BadRequestException("Category is inactive");
-        }
+        validateCategoryForSellerStore(category, authUser.getStoreId());
 
         if (productRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(
                 authUser.getStoreId(),
@@ -63,6 +53,7 @@ public class ProductService {
                 .stockQuantity(request.getStockQuantity())
                 .active(true)
                 .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         productRepository.save(product);
@@ -98,6 +89,13 @@ public class ProductService {
                 .toList();
     }
 
+    public List<ProductResponse> findByCategory(UUID categoryId) {
+        return productRepository.findByCategory_IdAndActiveTrueOrderByNameAsc(categoryId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public ProductResponse findById(UUID id) {
         Product product = findProductEntityById(id);
 
@@ -106,16 +104,19 @@ public class ProductService {
 
     public ProductResponse update(
             UUID id,
-            UpdateProductRequest request
+            UpdateProductRequest request,
+            String authorization
     ) {
+        AuthUserResponse authUser = getSeller(authorization);
+
         Product product = findProductEntityById(id);
+
+        validateProductForSellerStore(product, authUser.getStoreId());
 
         ProductCategory category = productCategoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new NotFoundException("Category not found"));
 
-        if (!Boolean.TRUE.equals(category.getActive())) {
-            throw new BadRequestException("Category is inactive");
-        }
+        validateCategoryForSellerStore(category, authUser.getStoreId());
 
         product.setCategory(category);
         product.setName(request.getName().trim());
@@ -129,8 +130,15 @@ public class ProductService {
         return toResponse(product);
     }
 
-    public void deactivate(UUID id) {
+    public void deactivate(
+            UUID id,
+            String authorization
+    ) {
+        AuthUserResponse authUser = getSeller(authorization);
+
         Product product = findProductEntityById(id);
+
+        validateProductForSellerStore(product, authUser.getStoreId());
 
         product.setActive(false);
         product.setUpdatedAt(LocalDateTime.now());
@@ -138,16 +146,49 @@ public class ProductService {
         productRepository.save(product);
     }
 
+    private AuthUserResponse getSeller(String authorization) {
+        AuthUserResponse authUser = authClient.me(authorization);
+
+        if (!"SELLER".equals(authUser.getRole())) {
+            throw new BadRequestException("Only sellers can manage products");
+        }
+
+        if (authUser.getStoreId() == null) {
+            throw new BadRequestException("Seller does not have a store");
+        }
+
+        return authUser;
+    }
+
+    private void validateCategoryForSellerStore(
+            ProductCategory category,
+            UUID storeId
+    ) {
+        if (!storeId.equals(category.getStoreId())) {
+            throw new BadRequestException("Category does not belong to seller store");
+        }
+
+        if (!Boolean.TRUE.equals(category.getActive())) {
+            throw new BadRequestException("Category is inactive");
+        }
+    }
+
+    private void validateProductForSellerStore(
+            Product product,
+            UUID storeId
+    ) {
+        if (!storeId.equals(product.getStoreId())) {
+            throw new BadRequestException("Product does not belong to seller store");
+        }
+
+        if (!Boolean.TRUE.equals(product.getActive())) {
+            throw new BadRequestException("Product is inactive");
+        }
+    }
+
     private Product findProductEntityById(UUID id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
-    }
-
-    public List<ProductResponse> findByCategory(UUID categoryId) {
-        return productRepository.findByCategory_IdAndActiveTrueOrderByNameAsc(categoryId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
     }
 
     private ProductResponse toResponse(Product product) {

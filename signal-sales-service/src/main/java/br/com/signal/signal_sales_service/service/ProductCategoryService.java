@@ -1,9 +1,7 @@
 package br.com.signal.signal_sales_service.service;
 
-import br.com.signal.signal_sales_service.dto.CategoryResponse;
-import br.com.signal.signal_sales_service.dto.CategoryWithProductsResponse;
-import br.com.signal.signal_sales_service.dto.CreateCategoryRequest;
-import br.com.signal.signal_sales_service.dto.ProductResponse;
+import br.com.signal.signal_sales_service.client.AuthClient;
+import br.com.signal.signal_sales_service.dto.*;
 import br.com.signal.signal_sales_service.entity.Product;
 import br.com.signal.signal_sales_service.entity.ProductCategory;
 import br.com.signal.signal_sales_service.exception.BadRequestException;
@@ -12,6 +10,7 @@ import br.com.signal.signal_sales_service.repository.ProductCategoryRepository;
 import br.com.signal.signal_sales_service.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,22 +20,35 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProductCategoryService {
 
+    private final AuthClient authClient;
     private final ProductCategoryRepository productCategoryRepository;
     private final ProductRepository productRepository;
 
-    public CategoryResponse create(CreateCategoryRequest request) {
+    @Transactional
+    public CategoryResponse create(
+            CreateCategoryRequest request,
+            String authorization
+    ) {
+        AuthUserResponse authUser = getSeller(authorization);
 
         String categoryName = request.getName().trim();
 
-        if (productCategoryRepository.existsByNameIgnoreCase(categoryName)) {
-            throw new BadRequestException("Category already exists");
+        if (productCategoryRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(
+                authUser.getStoreId(),
+                categoryName
+        )) {
+            throw new BadRequestException("Category already exists for this store");
         }
 
+        LocalDateTime now = LocalDateTime.now();
+
         ProductCategory category = ProductCategory.builder()
+                .storeId(authUser.getStoreId())
                 .name(categoryName)
                 .description(request.getDescription())
                 .active(true)
-                .createdAt(LocalDateTime.now())
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
 
         productCategoryRepository.save(category);
@@ -44,50 +56,154 @@ public class ProductCategoryService {
         return toCategoryResponse(category);
     }
 
-    public List<CategoryResponse> findAllActive() {
-        return productCategoryRepository.findByActiveTrueOrderByNameAsc()
+    public List<CategoryResponse> findMyCategories(String authorization) {
+        AuthUserResponse authUser = getSeller(authorization);
+
+        return productCategoryRepository
+                .findByStoreIdAndActiveTrueOrderByNameAsc(authUser.getStoreId())
                 .stream()
                 .map(this::toCategoryResponse)
                 .toList();
     }
 
-    public CategoryResponse findById(UUID id) {
-        ProductCategory category = findCategoryEntityById(id);
+    public CategoryWithProductsResponse findMyCategoryById(
+            UUID id,
+            String authorization
+    ) {
+        AuthUserResponse authUser = getSeller(authorization);
 
-        return toCategoryResponse(category);
-    }
-
-    public CategoryWithProductsResponse findByIdWithProducts(UUID id) {
-        ProductCategory category = findCategoryEntityById(id);
+        ProductCategory category = findCategoryForStore(
+                id,
+                authUser.getStoreId()
+        );
 
         List<ProductResponse> products = productRepository
-                .findByCategory_IdAndActiveTrueOrderByNameAsc(id)
+                .findByStoreIdAndCategory_IdAndActiveTrueOrderByNameAsc(
+                        authUser.getStoreId(),
+                        id
+                )
                 .stream()
                 .map(this::toProductResponse)
                 .toList();
 
         return CategoryWithProductsResponse.builder()
                 .id(category.getId())
+                .storeId(category.getStoreId())
                 .name(category.getName())
                 .description(category.getDescription())
                 .active(category.getActive())
                 .createdAt(category.getCreatedAt())
+                .updatedAt(category.getUpdatedAt())
                 .products(products)
                 .build();
     }
 
-    private ProductCategory findCategoryEntityById(UUID id) {
-        return productCategoryRepository.findById(id)
+    @Transactional
+    public CategoryResponse update(
+            UUID id,
+            UpdateCategoryRequest request,
+            String authorization
+    ) {
+        AuthUserResponse authUser = getSeller(authorization);
+
+        ProductCategory category = findCategoryForStore(
+                id,
+                authUser.getStoreId()
+        );
+
+        String categoryName = request.getName().trim();
+
+        boolean sameName = category.getName().equalsIgnoreCase(categoryName);
+
+        if (!sameName && productCategoryRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(
+                authUser.getStoreId(),
+                categoryName
+        )) {
+            throw new BadRequestException("Category already exists for this store");
+        }
+
+        category.setName(categoryName);
+        category.setDescription(request.getDescription());
+        category.setUpdatedAt(LocalDateTime.now());
+
+        productCategoryRepository.save(category);
+
+        return toCategoryResponse(category);
+    }
+
+    @Transactional
+    public void deactivate(
+            UUID id,
+            String authorization
+    ) {
+        AuthUserResponse authUser = getSeller(authorization);
+
+        ProductCategory category = findCategoryForStore(
+                id,
+                authUser.getStoreId()
+        );
+
+        LocalDateTime now = LocalDateTime.now();
+
+        category.setActive(false);
+        category.setUpdatedAt(now);
+
+        List<Product> products = productRepository
+                .findByStoreIdAndCategory_IdOrderByNameAsc(
+                        authUser.getStoreId(),
+                        id
+                );
+
+        products.forEach(product -> {
+            product.setActive(false);
+            product.setUpdatedAt(now);
+        });
+
+        productCategoryRepository.save(category);
+        productRepository.saveAll(products);
+    }
+
+    private ProductCategory findCategoryForStore(
+            UUID categoryId,
+            UUID storeId
+    ) {
+        ProductCategory category = productCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new NotFoundException("Category not found"));
+
+        if (!storeId.equals(category.getStoreId())) {
+            throw new BadRequestException("Category does not belong to seller store");
+        }
+
+        if (!Boolean.TRUE.equals(category.getActive())) {
+            throw new BadRequestException("Category is inactive");
+        }
+
+        return category;
+    }
+
+    private AuthUserResponse getSeller(String authorization) {
+        AuthUserResponse authUser = authClient.me(authorization);
+
+        if (!"SELLER".equals(authUser.getRole())) {
+            throw new BadRequestException("Only sellers can manage categories");
+        }
+
+        if (authUser.getStoreId() == null) {
+            throw new BadRequestException("Seller does not have a store");
+        }
+
+        return authUser;
     }
 
     private CategoryResponse toCategoryResponse(ProductCategory category) {
         return CategoryResponse.builder()
                 .id(category.getId())
+                .storeId(category.getStoreId())
                 .name(category.getName())
                 .description(category.getDescription())
                 .active(category.getActive())
                 .createdAt(category.getCreatedAt())
+                .updatedAt(category.getUpdatedAt())
                 .build();
     }
 

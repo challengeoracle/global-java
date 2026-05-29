@@ -21,7 +21,10 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping
-    public ResponseEntity<ProductResponse> create(@RequestBody @Valid CreateProductRequest request, @RequestHeader("Authorization") String authorization) {
+    public ResponseEntity<ProductResponse> create(
+            @RequestBody @Valid CreateProductRequest request,
+            @RequestHeader("Authorization") String authorization
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(productService.create(request, authorization));
     }
@@ -34,43 +37,60 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> findById(@PathVariable UUID id) {
+    public ResponseEntity<ProductResponse> findById(
+            @PathVariable UUID id
+    ) {
         return ResponseEntity.ok(
                 productService.findById(id)
         );
     }
 
     @GetMapping("/store/{storeId}")
-    public ResponseEntity<List<ProductResponse>> findByStore(@PathVariable UUID storeId) {
+    public ResponseEntity<List<ProductResponse>> findByStore(
+            @PathVariable UUID storeId
+    ) {
         return ResponseEntity.ok(
                 productService.findByStore(storeId)
         );
     }
 
-    @GetMapping("/category/{categoryId}")
-    public ResponseEntity<List<ProductResponse>> findByCategory(@PathVariable UUID categoryId) {
-        return ResponseEntity.ok(
-                productService.findByCategory(categoryId)
-        );
-    }
-
     @GetMapping("/store/{storeId}/category/{categoryId}")
-    public ResponseEntity<List<ProductResponse>> findByStoreAndCategory(@PathVariable UUID storeId,  @PathVariable UUID categoryId) {
+    public ResponseEntity<List<ProductResponse>> findByStoreAndCategory(
+            @PathVariable UUID storeId,
+            @PathVariable UUID categoryId
+    ) {
         return ResponseEntity.ok(
                 productService.findByStoreAndCategory(storeId, categoryId)
         );
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ProductResponse> update(@PathVariable UUID id, @RequestBody @Valid UpdateProductRequest request) {
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<List<ProductResponse>> findByCategory(
+            @PathVariable UUID categoryId
+    ) {
         return ResponseEntity.ok(
-                productService.update(id, request)
+                productService.findByCategory(categoryId)
+        );
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductResponse> update(
+            @PathVariable UUID id,
+            @RequestBody @Valid UpdateProductRequest request,
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                productService.update(id, request, authorization)
         );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deactivate(@PathVariable UUID id) {
-        productService.deactivate(id);
+    public ResponseEntity<Void> deactivate(
+            @PathVariable UUID id,
+            @RequestHeader("Authorization") String authorization
+    ) {
+        productService.deactivate(id, authorization);
+
         return ResponseEntity.noContent().build();
     }
 }
