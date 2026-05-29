@@ -16,14 +16,17 @@ import br.com.signal.signal_sales_service.repository.OrderSyncLogRepository;
 import br.com.signal.signal_sales_service.repository.ProductRepository;
 import br.com.signal.signal_sales_service.repository.SalesOrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -73,7 +76,19 @@ public class OrderService {
 
         LocalDateTime syncedAt = LocalDateTime.now();
 
-        List<OrderSyncItemResponse> results = request.getOrders()
+        List<OfflineOrderRequest> uniqueOrders = request.getOrders()
+                .stream()
+                .collect(Collectors.toMap(
+                        OfflineOrderRequest::getLocalOrderId,
+                        order -> order,
+                        (first, duplicate) -> first,
+                        LinkedHashMap::new
+                ))
+                .values()
+                .stream()
+                .toList();
+
+        List<OrderSyncItemResponse> results = uniqueOrders
                 .stream()
                 .map(orderRequest -> syncSingleOfflineOrder(
                         orderRequest,
@@ -149,11 +164,9 @@ public class OrderService {
             LocalDateTime syncedAt
     ) {
         try {
-            if (salesOrderRepository.existsByLocalOrderId(orderRequest.getLocalOrderId())) {
-                SalesOrder existing = salesOrderRepository
-                        .findByLocalOrderId(orderRequest.getLocalOrderId())
-                        .orElseThrow(() -> new NotFoundException("Order not found"));
+            SalesOrder existing = findExistingOfflineOrder(orderRequest.getLocalOrderId());
 
+            if (existing != null) {
                 createOrderSyncLog(
                         authUser.getStoreId(),
                         existing,
@@ -164,16 +177,7 @@ public class OrderService {
                         syncedAt
                 );
 
-                return OrderSyncItemResponse.builder()
-                        .localOrderId(orderRequest.getLocalOrderId())
-                        .orderId(existing.getId())
-                        .status("DUPLICATE")
-                        .message("Order already synced")
-                        .orderStatus(existing.getOrderStatus().name())
-                        .paymentStatus(existing.getPaymentStatus().name())
-                        .syncStatus(existing.getSyncStatus().name())
-                        .totalAmount(existing.getTotalAmount())
-                        .build();
+                return toDuplicateSyncResponse(orderRequest.getLocalOrderId(), existing);
             }
 
             SalesOrder order = createOrder(
@@ -209,6 +213,38 @@ public class OrderService {
                     .syncStatus(order.getSyncStatus().name())
                     .totalAmount(order.getTotalAmount())
                     .build();
+        } catch (DataIntegrityViolationException ex) {
+            SalesOrder existing = findExistingOfflineOrder(orderRequest.getLocalOrderId());
+
+            if (existing != null) {
+                createOrderSyncLog(
+                        authUser.getStoreId(),
+                        existing,
+                        orderRequest.getLocalOrderId(),
+                        deviceId,
+                        "DUPLICATE",
+                        "Order already synced",
+                        syncedAt
+                );
+
+                return toDuplicateSyncResponse(orderRequest.getLocalOrderId(), existing);
+            }
+
+            createOrderSyncLog(
+                    authUser.getStoreId(),
+                    null,
+                    orderRequest.getLocalOrderId(),
+                    deviceId,
+                    "REJECTED",
+                    "Order could not be synced because of a database constraint",
+                    syncedAt
+            );
+
+            return OrderSyncItemResponse.builder()
+                    .localOrderId(orderRequest.getLocalOrderId())
+                    .status("REJECTED")
+                    .message("Order could not be synced because of a database constraint")
+                    .build();
         } catch (RuntimeException ex) {
             createOrderSyncLog(
                     authUser.getStoreId(),
@@ -226,6 +262,27 @@ public class OrderService {
                     .message(ex.getMessage())
                     .build();
         }
+    }
+
+    private SalesOrder findExistingOfflineOrder(String localOrderId) {
+        if (localOrderId == null || localOrderId.isBlank()) {
+            return null;
+        }
+
+        return salesOrderRepository.findByLocalOrderId(localOrderId).orElse(null);
+    }
+
+    private OrderSyncItemResponse toDuplicateSyncResponse(String localOrderId, SalesOrder existing) {
+        return OrderSyncItemResponse.builder()
+                .localOrderId(localOrderId)
+                .orderId(existing.getId())
+                .status("DUPLICATE")
+                .message("Order already synced")
+                .orderStatus(existing.getOrderStatus().name())
+                .paymentStatus(existing.getPaymentStatus().name())
+                .syncStatus(existing.getSyncStatus().name())
+                .totalAmount(existing.getTotalAmount())
+                .build();
     }
 
     private SalesOrder createOrder(
@@ -309,7 +366,7 @@ public class OrderService {
         order.setItems(items);
         order.setTotalAmount(totalAmount);
 
-        return salesOrderRepository.save(order);
+        return salesOrderRepository.saveAndFlush(order);
     }
 
     private void createOrderSyncLog(
