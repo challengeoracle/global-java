@@ -4,6 +4,7 @@ import br.com.signal.signal_payment_service.shared.dto.response.AuthUserResponse
 import br.com.signal.signal_payment_service.shared.exception.BadRequestException;
 import br.com.signal.signal_payment_service.shared.service.AuthIdentityService;
 import br.com.signal.signal_payment_service.wallet.dto.request.DepositRequest;
+import br.com.signal.signal_payment_service.wallet.dto.request.SettleWalletRequest;
 import br.com.signal.signal_payment_service.wallet.dto.response.WalletResponse;
 import br.com.signal.signal_payment_service.wallet.dto.response.WalletTransactionResponse;
 import br.com.signal.signal_payment_service.wallet.entity.Wallet;
@@ -39,15 +40,23 @@ public class WalletService {
         return walletMapper.toResponse(wallet);
     }
 
+    @Transactional(readOnly = true)
+    public WalletResponse findMyPersonalWallet(String authorization) {
+        AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
+        Wallet wallet = getOrCreatePersonalWallet(authUser.getId());
+
+        return walletMapper.toResponse(wallet);
+    }
+
     @Transactional
     public WalletResponse deposit(String authorization, DepositRequest request) {
-        AuthUserResponse authUser = authIdentityService.requireCustomer(authorization);
+        AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
 
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Amount must be greater than zero");
         }
 
-        Wallet wallet = getOrCreateCustomerWallet(authUser.getId());
+        Wallet wallet = getOrCreatePersonalWallet(authUser.getId());
 
         wallet.setBalance(wallet.getBalance().add(request.getAmount()));
         wallet.setUpdatedAt(LocalDateTime.now());
@@ -60,10 +69,48 @@ public class WalletService {
                 .amount(request.getAmount())
                 .description(
                         request.getDescription() == null || request.getDescription().isBlank()
-                                ? "Fake wallet deposit"
+                                ? "Depósito fake na carteira"
                                 : request.getDescription()
                 )
                 .referenceId("deposit-" + UUID.randomUUID())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        walletTransactionRepository.save(transaction);
+
+        return walletMapper.toResponse(savedWallet);
+    }
+
+    @Transactional
+    public WalletResponse settle(String authorization, SettleWalletRequest request) {
+        AuthUserResponse authUser = authIdentityService.requireSeller(authorization);
+
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("Amount must be greater than zero");
+        }
+
+        Wallet wallet = getOrCreateStoreWallet(authUser.getStoreId());
+
+        if (wallet.getPendingBalance().compareTo(request.getAmount()) < 0) {
+            throw new BadRequestException("Insufficient pending balance");
+        }
+
+        wallet.setPendingBalance(wallet.getPendingBalance().subtract(request.getAmount()));
+        wallet.setBalance(wallet.getBalance().add(request.getAmount()));
+        wallet.setUpdatedAt(LocalDateTime.now());
+
+        Wallet savedWallet = walletRepository.save(wallet);
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .wallet(savedWallet)
+                .type(WalletTransactionType.SETTLEMENT)
+                .amount(request.getAmount())
+                .description(
+                        request.getDescription() == null || request.getDescription().isBlank()
+                                ? "Liquidação de saldo pendente"
+                                : request.getDescription()
+                )
+                .referenceId("settlement-" + UUID.randomUUID())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -83,10 +130,21 @@ public class WalletService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<WalletTransactionResponse> findMyPersonalTransactions(String authorization) {
+        AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
+        Wallet wallet = getOrCreatePersonalWallet(authUser.getId());
+
+        return walletTransactionRepository.findByWalletIdOrderByCreatedAtDesc(wallet.getId())
+                .stream()
+                .map(walletMapper::toTransactionResponse)
+                .toList();
+    }
+
     @Transactional
     public Wallet getOrCreateWalletForUser(AuthUserResponse authUser) {
         if (authUser.isCustomer()) {
-            return getOrCreateCustomerWallet(authUser.getId());
+            return getOrCreatePersonalWallet(authUser.getId());
         }
 
         if (authUser.isSeller()) {
@@ -98,6 +156,11 @@ public class WalletService {
         }
 
         throw new BadRequestException("Invalid user role");
+    }
+
+    @Transactional
+    public Wallet getOrCreatePersonalWallet(UUID userId) {
+        return getOrCreateCustomerWallet(userId);
     }
 
     @Transactional

@@ -71,6 +71,17 @@ public class PaymentProcessingService {
             return;
         }
 
+        if (event.sellerId() != null && event.customerId().equals(event.sellerId())) {
+            PaymentTransaction transaction = createRejectedTransaction(
+                    event,
+                    "Buyer and seller cannot be the same user",
+                    now
+            );
+
+            paymentProcessedPublisher.publish(toProcessedEvent(transaction));
+            return;
+        }
+
         if (event.totalAmount() == null || event.totalAmount().compareTo(BigDecimal.ZERO) <= 0) {
             PaymentTransaction transaction = createRejectedTransaction(
                     event,
