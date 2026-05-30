@@ -11,12 +11,7 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
     hikari:
-      # TEMPORÁRIO PARA VALIDAR/RODAR MIGRATIONS:
-      # use DB_POOL_SIZE=5 e FLYWAY_ENABLED=true
-      #
-      # DEPOIS DE VALIDAR:
-      # volte para DB_POOL_SIZE=2 e FLYWAY_ENABLED=false
-      maximum-pool-size: ${DB_POOL_SIZE:5}
+      maximum-pool-size: ${DB_POOL_SIZE:2}
       minimum-idle: ${DB_MIN_IDLE:0}
       idle-timeout: ${DB_IDLE_TIMEOUT:10000}
       max-lifetime: ${DB_MAX_LIFETIME:120000}
@@ -32,9 +27,7 @@ spring:
         format_sql: true
 
   flyway:
-    # TEMPORÁRIO PARA VALIDAR/RODAR MIGRATIONS:
-    # trocar para false ou use FLYWAY_ENABLED=false no IntelliJ.
-    enabled: ${FLYWAY_ENABLED:true}
+    enabled: ${FLYWAY_ENABLED:false}
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: "0"
