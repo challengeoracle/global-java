@@ -352,7 +352,7 @@ server:
 port: 8082
 
 auth:
-service-url: ${AUTH_SERVICE_URL:[http://localhost:8081}](http://localhost:8081})
+service-url: ${AUTH_SERVICE_URL:http://localhost:8081}
 
 jwt:
 secret: ${JWT_SECRET}
