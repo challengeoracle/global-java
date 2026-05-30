@@ -40,4 +40,14 @@ public class AuthIdentityService {
 
         return authUser;
     }
+
+    public AuthUserResponse requireCustomerOrSeller(String authorization) {
+        AuthUserResponse authUser = me(authorization);
+
+        if (!"CUSTOMER".equals(authUser.getRole()) && !"SELLER".equals(authUser.getRole())) {
+            throw new ForbiddenException("Invalid user role");
+        }
+
+        return authUser;
+    }
 }
