@@ -5,12 +5,18 @@ import br.com.signal.signal_sales_service.order.dto.response.OrderResponse;
 import br.com.signal.signal_sales_service.order.entity.SalesOrder;
 import br.com.signal.signal_sales_service.order.entity.SalesOrderItem;
 
+import java.util.List;
+
 public final class OrderMapper {
 
     private OrderMapper() {
     }
 
     public static OrderResponse toResponse(SalesOrder order) {
+        List<OrderItemResponse> items = order.getItems() == null
+                ? List.of()
+                : order.getItems().stream().map(OrderMapper::toItemResponse).toList();
+
         return OrderResponse.builder()
                 .id(order.getId())
                 .localOrderId(order.getLocalOrderId())
@@ -18,20 +24,21 @@ public final class OrderMapper {
                 .customerId(order.getCustomerId())
                 .sellerId(order.getSellerId())
                 .deviceId(order.getDeviceId())
-                .orderStatus(order.getOrderStatus().name())
-                .paymentStatus(order.getPaymentStatus().name())
-                .syncStatus(order.getSyncStatus().name())
+                .orderStatus(order.getOrderStatus() == null ? null : order.getOrderStatus().name())
+                .paymentStatus(order.getPaymentStatus() == null ? null : order.getPaymentStatus().name())
+                .syncStatus(order.getSyncStatus() == null ? null : order.getSyncStatus().name())
                 .totalAmount(order.getTotalAmount())
                 .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
                 .offlineCreatedAt(order.getOfflineCreatedAt())
-                .items(order.getItems().stream().map(OrderMapper::toItemResponse).toList())
+                .items(items)
                 .build();
     }
 
     public static OrderItemResponse toItemResponse(SalesOrderItem item) {
         return OrderItemResponse.builder()
                 .id(item.getId())
-                .productId(item.getProduct().getId())
+                .productId(item.getProduct() == null ? null : item.getProduct().getId())
                 .productName(item.getProductName())
                 .unitPrice(item.getUnitPrice())
                 .quantity(item.getQuantity())

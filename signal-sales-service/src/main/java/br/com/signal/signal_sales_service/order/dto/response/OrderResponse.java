@@ -20,11 +20,16 @@ public class OrderResponse {
     private UUID customerId;
     private UUID sellerId;
     private String deviceId;
+
     private String orderStatus;
     private String paymentStatus;
     private String syncStatus;
+
     private BigDecimal totalAmount;
+
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private LocalDateTime offlineCreatedAt;
+
     private List<OrderItemResponse> items;
 }

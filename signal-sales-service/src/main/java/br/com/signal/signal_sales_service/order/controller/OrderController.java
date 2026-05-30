@@ -2,9 +2,9 @@ package br.com.signal.signal_sales_service.order.controller;
 
 import br.com.signal.signal_sales_service.order.dto.request.CreateOrderRequest;
 import br.com.signal.signal_sales_service.order.dto.response.OrderResponse;
+import br.com.signal.signal_sales_service.order.service.OrderService;
 import br.com.signal.signal_sales_service.sync.dto.request.OrderSyncRequest;
 import br.com.signal.signal_sales_service.sync.dto.response.OrderSyncResponse;
-import br.com.signal.signal_sales_service.order.service.OrderService;
 import br.com.signal.signal_sales_service.sync.service.OrderSyncService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +27,21 @@ public class OrderController {
     public ResponseEntity<List<OrderResponse>> findMyOrders(
             @RequestHeader("Authorization") String authorization
     ) {
-        return ResponseEntity.ok(
-                orderService.findMyOrders(authorization)
-        );
+        return ResponseEntity.ok(orderService.findMyOrders(authorization));
+    }
+
+    @GetMapping("/me/sales")
+    public ResponseEntity<List<OrderResponse>> findMySales(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(orderService.findMySales(authorization));
+    }
+
+    @GetMapping("/me/purchases")
+    public ResponseEntity<List<OrderResponse>> findMyPurchases(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(orderService.findMyPurchases(authorization));
     }
 
     @PostMapping
@@ -37,7 +49,8 @@ public class OrderController {
             @RequestBody @Valid CreateOrderRequest request,
             @RequestHeader("Authorization") String authorization
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
                 .body(orderService.createOnlineOrder(request, authorization));
     }
 
@@ -46,9 +59,7 @@ public class OrderController {
             @RequestBody @Valid OrderSyncRequest request,
             @RequestHeader("Authorization") String authorization
     ) {
-        return ResponseEntity.ok(
-                orderSyncService.syncOfflineOrders(request, authorization)
-        );
+        return ResponseEntity.ok(orderSyncService.syncOfflineOrders(request, authorization));
     }
 
     @GetMapping("/{id}")
@@ -56,9 +67,7 @@ public class OrderController {
             @PathVariable UUID id,
             @RequestHeader("Authorization") String authorization
     ) {
-        return ResponseEntity.ok(
-                orderService.findById(id, authorization)
-        );
+        return ResponseEntity.ok(orderService.findById(id, authorization));
     }
 
     @GetMapping("/store/{storeId}")
@@ -66,9 +75,7 @@ public class OrderController {
             @PathVariable UUID storeId,
             @RequestHeader("Authorization") String authorization
     ) {
-        return ResponseEntity.ok(
-                orderService.findByStore(storeId, authorization)
-        );
+        return ResponseEntity.ok(orderService.findByStore(storeId, authorization));
     }
 
     @GetMapping("/customer/{customerId}")
@@ -76,8 +83,6 @@ public class OrderController {
             @PathVariable UUID customerId,
             @RequestHeader("Authorization") String authorization
     ) {
-        return ResponseEntity.ok(
-                orderService.findByCustomer(customerId, authorization)
-        );
+        return ResponseEntity.ok(orderService.findByCustomer(customerId, authorization));
     }
 }

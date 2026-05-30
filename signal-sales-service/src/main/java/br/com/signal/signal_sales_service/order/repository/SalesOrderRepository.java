@@ -13,6 +13,8 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, UUID> {
 
     List<SalesOrder> findByCustomerIdOrderByCreatedAtDesc(UUID customerId);
 
+    List<SalesOrder> findByStoreIdOrCustomerIdOrderByCreatedAtDesc(UUID storeId, UUID customerId);
+
     boolean existsByDeviceIdAndLocalOrderId(String deviceId, String localOrderId);
 
     Optional<SalesOrder> findByDeviceIdAndLocalOrderId(String deviceId, String localOrderId);
