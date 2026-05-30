@@ -26,17 +26,17 @@ public class RabbitMQConfig {
     private String paymentRequestedRoutingKey;
 
     @Bean
-    public TopicExchange salesExchange() {
+    public DirectExchange salesExchange() {
         return ExchangeBuilder
-                .topicExchange(salesExchangeName)
+                .directExchange(salesExchangeName)
                 .durable(true)
                 .build();
     }
 
     @Bean
-    public TopicExchange paymentExchange() {
+    public DirectExchange paymentExchange() {
         return ExchangeBuilder
-                .topicExchange(paymentExchangeName)
+                .directExchange(paymentExchangeName)
                 .durable(true)
                 .build();
     }
