@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 spring:
   application:
@@ -10,6 +10,12 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:2}
+      minimum-idle: ${DB_MIN_IDLE:0}
+      idle-timeout: ${DB_IDLE_TIMEOUT:10000}
+      max-lifetime: ${DB_MAX_LIFETIME:120000}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
 
   jpa:
     database-platform: org.hibernate.dialect.OracleDialect
@@ -21,7 +27,7 @@ spring:
         format_sql: false
 
   flyway:
-    enabled: true
+    enabled: ${FLYWAY_ENABLED:false}
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: "0"

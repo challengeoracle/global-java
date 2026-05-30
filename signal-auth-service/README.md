@@ -1,177 +1,152 @@
-# OffPay Auth Service
+# SIGNAL Auth Service
 
-Serviço de identidade do OffPay. Responsável por cadastro, login, JWT, perfil do usuário e papéis (`CUSTOMER` / `SELLER`).
+Serviço de **identidade** do SIGNAL: login, JWT, perfil do usuário e papéis (`CUSTOMER` / `SELLER`).
 
 A API roda localmente em:
 
-```text
+```
 http://localhost:8081
 ```
 
 Swagger:
 
-```text
+```
 http://localhost:8081/swagger-ui.html
 ```
+
+---
 
 ## Responsabilidade
 
 O `signal-auth-service` responde por:
 
-| Função                | Endpoint                       |
-| --------------------- | ------------------------------ |
-| Cadastro de vendedor  | `POST /auth/register/seller`   |
-| Cadastro de cliente   | `POST /auth/register/customer` |
-| Login com JWT         | `POST /auth/login`             |
-| Perfil autenticado    | `GET /auth/me`                 |
-| Atualização de device | `PATCH /device/me`             |
+| Função | Endpoint |
+|--------|----------|
+| Cadastro de vendedor | `POST /auth/register/seller` |
+| Cadastro de cliente | `POST /auth/register/customer` |
+| Login + JWT | `POST /auth/login` |
+| Perfil autenticado | `GET /auth/me` |
 
-O Auth Service não processa vendas, catálogo, pedidos ou pagamentos.
+O auth **não** processa vendas, catálogo ou pagamentos.  
+O `signal-sales-service` consome apenas `GET /auth/me` (JWT) para identificar vendedor, `storeId` e `deviceId` opcional.
 
-O `signal-sales-service` consome `GET /auth/me` para identificar o usuário autenticado, seu papel, `storeId` e `deviceId` opcional.
+---
 
-## Modelo de Identidade
+## Modelo de identidade
 
 ### JWT
 
-O JWT carrega as informações necessárias para autenticação e autorização entre os serviços.
-
-Claims principais:
-
-- `subject`: e-mail do usuário
-- `role`: papel do usuário
-- `userId`: identificador do usuário
-
-A expiração é configurável por `jwt.expiration-minutes`.
+Claims: `subject` (email), `role`, `userId`.  
+Expiração configurável via `jwt.expiration-minutes` (padrão: 120 min).
 
 ### Papéis
 
-- `SELLER`: vendedor associado a uma loja
-- `CUSTOMER`: cliente final
+- `SELLER` — vendedor com loja (`storeId`, `storeName`)
+- `CUSTOMER` — cliente final
 
-### deviceId
+### deviceId (opcional)
 
-O `deviceId` é opcional e usado apenas para rastreabilidade do aparelho.
+- Pode ser informado no cadastro do vendedor ou depois via `PATCH /device/me` (legado)
+- Retornado em `/auth/me` quando registrado; `null` caso contrário
+- O sales-service recebe `deviceId` no body do sync para **rastreio**, sem exigir ativação offline
 
-Ele pode ser:
+---
 
-- informado no cadastro do vendedor
-- atualizado depois via `PATCH /device/me`
-- retornado em `/auth/me`, caso exista
-
-O `deviceId` não bloqueia operações offline-first no Sales Service.
-
-## Endpoints Principais
+## Endpoints principais
 
 ### Cadastro de vendedor
 
-`POST /auth/register/seller`
-
-Cria um vendedor com loja vinculada.
+```
+POST /auth/register/seller
+```
 
 ```json
 {
-    "name": "Mateus Lima",
-    "email": "mateus.seller@email.com",
-    "password": "123456",
-    "cpf": "12345678901",
-    "phone": "11999999999",
-    "storeName": "Mercado OffPay",
-    "storeCategory": "Mercado",
-    "deviceId": "device-seller-001"
+  "name": "Mateus Lima",
+  "email": "mateus.seller@email.com",
+  "password": "123456",
+  "cpf": "12345678901",
+  "phone": "11999999999",
+  "storeName": "Mercado Signal",
+  "storeCategory": "Mercado",
+  "deviceId": "device-seller-001"
 }
 ```
 
-Observação: `deviceId` é opcional.
+`deviceId` é **opcional**. Sem ele, o vendedor é criado normalmente; o device pode ser registrado depois.
 
 ### Cadastro de cliente
 
-`POST /auth/register/customer`
-
-Cria um cliente final.
-
-```json
-{
-    "name": "Maria Souza",
-    "email": "maria.customer@email.com",
-    "password": "123456",
-    "cpf": "10987654321",
-    "phone": "11988887777"
-}
+```
+POST /auth/register/customer
 ```
 
 ### Login
 
-`POST /auth/login`
-
-Autentica o usuário e retorna o JWT.
-
-```json
-{
-    "email": "mateus.seller@email.com",
-    "password": "123456"
-}
+```
+POST /auth/login
 ```
 
-O login não retorna token offline.
+Retorna JWT + perfil. **Não** retorna token offline.
 
 ### Perfil autenticado
 
-`GET /auth/me`
-
-Requer autenticação via JWT.
-
-```http
+```
+GET /auth/me
 Authorization: Bearer <JWT>
 ```
 
-Retorna o contexto do usuário autenticado, incluindo papel, dados do perfil e loja vinculada quando aplicável.
-
-### Atualizar device
-
-`PATCH /device/me`
-
-Atualiza o identificador local do aparelho do vendedor.
+Resposta para vendedor:
 
 ```json
 {
-    "deviceId": "device-seller-002"
+  "id": "...",
+  "name": "Mateus Lima",
+  "email": "mateus.seller@email.com",
+  "role": "SELLER",
+  "storeId": "...",
+  "storeName": "Mercado Signal",
+  "deviceId": "device-seller-001"
 }
 ```
 
-## Integração com Sales Service
+Para cliente, `storeId` e `deviceId` vêm `null`.
 
-O Sales Service chama `GET /auth/me` usando o JWT recebido do mobile.
+---
 
-Com isso, o Sales consegue:
+## Integração com Sales
 
-- identificar o usuário autenticado
-- validar se o usuário é `SELLER` ou `CUSTOMER`
-- obter o `storeId` do vendedor
-- associar catálogo, produtos e pedidos à loja correta
-- usar `deviceId` apenas como rastreio quando necessário
+O sales-service chama `GET /auth/me` com o JWT do vendedor:
 
-Não é necessário ativar modo offline antes de sincronizar pedidos.
+- Valida papel `SELLER`
+- Usa `storeId` para associar pedidos
+- `deviceId` do sync vem no body (`OrderSyncRequest.deviceId`) — rastreio, não bloqueio
 
-## Endpoints Legados de Offline
+**Não é necessário** chamar `/device/offline/activate` antes de sincronizar pedidos.
 
-Alguns endpoints de offline ainda podem existir por compatibilidade, mas não fazem parte do fluxo principal do OffPay.
+---
 
-| Endpoint                          | Descrição                                 |
-| --------------------------------- | ----------------------------------------- |
-| `GET /device/me`                  | Consulta status do device                 |
-| `POST /device/offline/activate`   | Gera token offline legado para vendedor   |
-| `PATCH /device/me`                | Atualiza `deviceId`                       |
-| `POST /customer/offline/activate` | Gera sessão offline legada para cliente   |
-| `GET /customer/offline/me`        | Consulta sessão offline legada do cliente |
+## Endpoints legados (offline)
 
-Esses endpoints não bloqueiam operações no Sales Service.
+Mantidos por compatibilidade. Tabelas `TB_DEVICES` e `TB_CUSTOMER_OFFLINE_SESSIONS` **não foram removidas**.
+
+| Endpoint | Descrição |
+|----------|-----------|
+| `GET /device/me` | Status do device + token offline (legado) |
+| `POST /device/offline/activate` | Gera `offlineToken` do vendedor (legado) |
+| `PATCH /device/me` | Registra/atualiza `deviceId` |
+| `POST /customer/offline/activate` | Gera `sessionToken` do cliente (legado) |
+| `GET /customer/offline/me` | Status da sessão offline do cliente (legado) |
+
+Esses endpoints **não bloqueiam** operações no sales-service.
+
+---
 
 ## Segurança
 
-Rotas públicas:
+**Públicas:**
 
-```text
+```
 POST /auth/register/seller
 POST /auth/register/customer
 POST /auth/login
@@ -179,38 +154,39 @@ POST /auth/login
 /v3/api-docs
 ```
 
-Rotas autenticadas:
+**Autenticadas (JWT):**
 
-```text
+```
 GET /auth/me
-PATCH /device/me
 ```
 
-Rotas legadas por papel:
+**Por papel (legado):**
 
-```text
-SELLER -> /device/**
-CUSTOMER -> /customer/offline/**
 ```
+SELLER   → /device/**
+CUSTOMER → /customer/offline/**
+```
+
+---
 
 ## Configuração
 
 ```yaml
 jwt:
-secret: ${JWT_SECRET}
-expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+  secret: ${JWT_SECRET}
+  expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
 
 offline:
-session-expiration-hours: 24
+  session-expiration-hours: 24   # usado apenas pelos endpoints legados
 ```
 
-A configuração `offline` é mantida apenas para endpoints legados.
+---
 
-## Fluxo Recomendado no Mobile
+## Fluxo recomendado (mobile)
 
-1. O usuário faz cadastro ou login.
-2. O mobile armazena o JWT.
-3. O mobile consulta `GET /auth/me`.
-4. O app obtém `role`, `storeId` e `deviceId`, quando houver.
-5. O Sales Service usa o JWT para validar contexto e permissões.
-6. O fluxo offline-first salva dados localmente e sincroniza quando houver conexão.
+1. `POST /auth/register/seller` ou `/auth/login`
+2. Guardar JWT
+3. `GET /auth/me` → obter `storeId`, `role`, `deviceId` (se houver)
+4. Sync de pedidos no sales com JWT + `deviceId` no body
+
+Sem necessidade de ativação offline.

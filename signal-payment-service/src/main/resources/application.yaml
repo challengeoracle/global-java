@@ -1,9 +1,9 @@
 server:
-  port: ${SERVER_PORT:8082}
+  port: ${SERVER_PORT:8083}
 
 spring:
   application:
-    name: signal-sales-service
+    name: signal-payment-service
 
   datasource:
     url: ${DB_URL}
@@ -11,7 +11,12 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:2}
+      # TEMPORÁRIO PARA VALIDAR/RODAR MIGRATIONS:
+      # use DB_POOL_SIZE=5 e FLYWAY_ENABLED=true
+      #
+      # DEPOIS DE VALIDAR:
+      # volte para DB_POOL_SIZE=2 e FLYWAY_ENABLED=false
+      maximum-pool-size: ${DB_POOL_SIZE:5}
       minimum-idle: ${DB_MIN_IDLE:0}
       idle-timeout: ${DB_IDLE_TIMEOUT:10000}
       max-lifetime: ${DB_MAX_LIFETIME:120000}
@@ -24,15 +29,17 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        format_sql: false
+        format_sql: true
 
   flyway:
-    enabled: ${FLYWAY_ENABLED:false}
+    # TEMPORÁRIO PARA VALIDAR/RODAR MIGRATIONS:
+    # trocar para false ou use FLYWAY_ENABLED=false no IntelliJ.
+    enabled: ${FLYWAY_ENABLED:true}
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: "0"
     validate-on-migrate: true
-    table: flyway_schema_history_sales
+    table: flyway_schema_history_payment
 
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
@@ -45,12 +52,20 @@ spring:
       ignored-interfaces:
         - .*
 
+auth:
+  service-url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
 jwt:
   secret: ${JWT_SECRET}
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
 
-offline:
-  session-expiration-hours: 24
+offpay:
+  rabbit:
+    sales-exchange: offpay.sales.exchange
+    payment-exchange: offpay.payment.exchange
+    payment-requested-queue: offpay.payment.requested.queue
+    payment-requested-routing-key: payment.requested
+    payment-processed-routing-key: payment.processed
 
 springdoc:
   swagger-ui:
@@ -59,7 +74,7 @@ springdoc:
 logging:
   level:
     root: warn
-    br.com.signal.signal_sales_service: info
+    br.com.signal.signal_payment_service: info
     org.hibernate.SQL: off
     org.hibernate.orm.jdbc.bind: off
     org.hibernate.type.descriptor.sql: off
@@ -67,7 +82,3 @@ logging:
     org.springframework.web: warn
     org.flywaydb: info
     com.zaxxer.hikari: warn
-
-services:
-  auth:
-    url: ${AUTH_SERVICE_URL:http://localhost:8081}
