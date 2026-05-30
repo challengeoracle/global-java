@@ -1,36 +1,74 @@
 package br.com.signal.signal_payment_service.shared.config;
 
-import org.springframework.amqp.core.DirectExchange;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+@EnableRabbit
 @Configuration
 public class RabbitMQConfig {
 
-    public static final String SALES_EXCHANGE = "offpay.sales.exchange";
-    public static final String PAYMENT_REQUESTED_ROUTING_KEY = "payment.requested";
+    @Value("${offpay.rabbit.sales-exchange}")
+    private String salesExchangeName;
+
+    @Value("${offpay.rabbit.payment-exchange}")
+    private String paymentExchangeName;
+
+    @Value("${offpay.rabbit.payment-requested-queue}")
+    private String paymentRequestedQueueName;
+
+    @Value("${offpay.rabbit.payment-requested-routing-key}")
+    private String paymentRequestedRoutingKey;
 
     @Bean
-    public DirectExchange salesExchange() {
-        return new DirectExchange(SALES_EXCHANGE);
+    public TopicExchange salesExchange() {
+        return ExchangeBuilder
+                .topicExchange(salesExchangeName)
+                .durable(true)
+                .build();
     }
 
     @Bean
-    public MessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
+    public TopicExchange paymentExchange() {
+        return ExchangeBuilder
+                .topicExchange(paymentExchangeName)
+                .durable(true)
+                .build();
+    }
+
+    @Bean
+    public Queue paymentRequestedQueue() {
+        return QueueBuilder
+                .durable(paymentRequestedQueueName)
+                .build();
+    }
+
+    @Bean
+    public Binding paymentRequestedBinding() {
+        return BindingBuilder
+                .bind(paymentRequestedQueue())
+                .to(salesExchange())
+                .with(paymentRequestedRoutingKey);
+    }
+
+    @Bean
+    public Jackson2JsonMessageConverter jackson2JsonMessageConverter(ObjectMapper objectMapper) {
+        return new Jackson2JsonMessageConverter(objectMapper);
     }
 
     @Bean
     public RabbitTemplate rabbitTemplate(
-            ConnectionFactory connectionFactory,
-            MessageConverter jsonMessageConverter
+            org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory,
+            Jackson2JsonMessageConverter messageConverter
     ) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(jsonMessageConverter);
+        rabbitTemplate.setMessageConverter(messageConverter);
+
         return rabbitTemplate;
     }
 }
