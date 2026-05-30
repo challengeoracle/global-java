@@ -33,6 +33,5 @@ public class RegisterSellerRequest {
     @NotBlank
     private String storeCategory;
 
-    @NotBlank
     private String deviceId;
 }

@@ -38,7 +38,7 @@ public class AuthService {
         validateSellerCreation(
                 request.getEmail(),
                 request.getCpf(),
-                request.getDeviceId()
+                normalizeDeviceId(request.getDeviceId())
         );
 
         User user = User.builder()
@@ -62,15 +62,21 @@ public class AuthService {
 
         storeRepository.save(store);
 
-        Device device = Device.builder()
-                .deviceId(request.getDeviceId())
-                .offlineToken(null)
-                .offlineExpiresAt(null)
-                .active(true)
-                .user(user)
-                .build();
+        Optional<Device> device = Optional.empty();
+        String deviceId = normalizeDeviceId(request.getDeviceId());
 
-        deviceRepository.save(device);
+        if (deviceId != null) {
+            Device registeredDevice = Device.builder()
+                    .deviceId(deviceId)
+                    .offlineToken(null)
+                    .offlineExpiresAt(null)
+                    .active(true)
+                    .user(user)
+                    .build();
+
+            deviceRepository.save(registeredDevice);
+            device = Optional.of(registeredDevice);
+        }
 
         String token = jwtService.generateToken(user);
 
@@ -79,7 +85,7 @@ public class AuthService {
                 .user(buildUserResponse(
                         user,
                         Optional.of(store),
-                        Optional.of(device)
+                        device
                 ))
                 .build();
     }
@@ -198,9 +204,17 @@ public class AuthService {
                 cpf
         );
 
-        if (deviceRepository.existsByDeviceId(deviceId)) {
+        if (deviceId != null && deviceRepository.existsByDeviceId(deviceId)) {
             throw new BadRequestException("Device already registered");
         }
+    }
+
+    private String normalizeDeviceId(String deviceId) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return null;
+        }
+
+        return deviceId.trim();
     }
 
     private UserResponse buildUserResponse(
