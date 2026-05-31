@@ -1,0 +1,48 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  application:
+    name: signal-analytics-ai-service
+
+  ai:
+    openai:
+      api-key: ${GROQ_API_KEY}
+      base-url: ${GROQ_BASE_URL:https://api.groq.com/openai}
+      chat:
+        options:
+          model: ${GROQ_MODEL:llama-3.1-8b-instant}
+          temperature: ${AI_TEMPERATURE:0.2}
+
+  cloud:
+    inetutils:
+      ignored-interfaces:
+        - .*
+
+  cache:
+    type: caffeine
+
+auth:
+  service-url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+services:
+  sales:
+    url: ${SALES_SERVICE_URL:http://localhost:8082}
+  payment:
+    url: ${PAYMENT_SERVICE_URL:http://localhost:8083}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    root: warn
+    br.com.signal.signal_analytics_ai_service: info
+    org.springframework.security: warn
+    org.springframework.web: warn
+    org.springframework.ai: info
