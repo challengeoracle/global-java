@@ -16,6 +16,7 @@ import br.com.signal.signal_sales_service.sync.repository.CatalogSyncLogReposito
 import br.com.signal.signal_sales_service.catalog.repository.ProductCategoryRepository;
 import br.com.signal.signal_sales_service.catalog.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -38,6 +39,7 @@ public class CatalogSyncService {
     private final CatalogSyncLogRepository catalogSyncLogRepository;
     private final PlatformTransactionManager transactionManager;
 
+    @CacheEvict(cacheNames = {"catalogByStore", "productById", "productsByStore"}, allEntries = true)
     public CatalogSyncResponse syncCatalog(CatalogSyncRequest request, String authorization) {
         AuthUserResponse authUser = authIdentityService.requireSeller(authorization);
 
@@ -444,6 +446,7 @@ public class CatalogSyncService {
         }
 
         Product product = Product.builder()
+                .id(item.getProductId())
                 .storeId(storeId)
                 .category(category)
                 .name(item.getName().trim())

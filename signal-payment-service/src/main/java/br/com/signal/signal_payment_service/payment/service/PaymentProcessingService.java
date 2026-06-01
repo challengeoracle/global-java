@@ -9,10 +9,12 @@ import br.com.signal.signal_payment_service.payment.repository.PaymentTransactio
 import br.com.signal.signal_payment_service.wallet.entity.Wallet;
 import br.com.signal.signal_payment_service.wallet.entity.WalletTransaction;
 import br.com.signal.signal_payment_service.wallet.enums.WalletTransactionType;
+import br.com.signal.signal_payment_service.wallet.repository.WalletRepository;
 import br.com.signal.signal_payment_service.wallet.repository.WalletTransactionRepository;
 import br.com.signal.signal_payment_service.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ import java.util.UUID;
 public class PaymentProcessingService {
 
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final WalletService walletService;
     private final PaymentProcessedPublisher paymentProcessedPublisher;
@@ -34,11 +37,24 @@ public class PaymentProcessingService {
     public void process(PaymentRequestedEvent event) {
         log.info("Processing payment for order {}", event.orderId());
 
-        paymentTransactionRepository.findByOrderId(event.orderId())
-                .ifPresentOrElse(
-                        existingTransaction -> publishExistingResult(event, existingTransaction),
-                        () -> processNewPayment(event)
-                );
+        try {
+            paymentTransactionRepository.findByOrderId(event.orderId())
+                    .ifPresentOrElse(
+                            existingTransaction -> publishExistingResult(event, existingTransaction),
+                            () -> processNewPayment(event)
+                    );
+        } catch (DataIntegrityViolationException ex) {
+            paymentTransactionRepository.findByOrderId(event.orderId())
+                    .ifPresentOrElse(
+                            existingTransaction -> {
+                                log.warn("Detected concurrent payment processing for order {}. Reusing persisted result.", event.orderId());
+                                publishExistingResult(event, existingTransaction);
+                            },
+                            () -> {
+                                throw ex;
+                            }
+                    );
+        }
     }
 
     private void processNewPayment(PaymentRequestedEvent event) {
@@ -93,7 +109,7 @@ public class PaymentProcessingService {
             return;
         }
 
-        Wallet customerWallet = walletService.getOrCreateCustomerWallet(event.customerId());
+        Wallet customerWallet = walletService.getOrCreateCustomerWalletForUpdate(event.customerId());
 
         if (customerWallet.getBalance().compareTo(event.totalAmount()) < 0) {
             PaymentTransaction transaction = createRejectedTransaction(
@@ -106,13 +122,18 @@ public class PaymentProcessingService {
             return;
         }
 
-        Wallet storeWallet = walletService.getOrCreateStoreWallet(event.storeId());
+        Wallet storeWallet = walletService.getOrCreateStoreWalletForUpdate(event.storeId());
 
         customerWallet.setBalance(customerWallet.getBalance().subtract(event.totalAmount()));
+        customerWallet.setUpdatedAt(now);
         storeWallet.setPendingBalance(storeWallet.getPendingBalance().add(event.totalAmount()));
+        storeWallet.setUpdatedAt(now);
+
+        Wallet savedCustomerWallet = walletRepository.save(customerWallet);
+        Wallet savedStoreWallet = walletRepository.save(storeWallet);
 
         WalletTransaction customerDebit = WalletTransaction.builder()
-                .wallet(customerWallet)
+                .wallet(savedCustomerWallet)
                 .type(WalletTransactionType.PAYMENT_DEBIT)
                 .amount(event.totalAmount())
                 .description("Pagamento do pedido " + event.localOrderId())
@@ -121,7 +142,7 @@ public class PaymentProcessingService {
                 .build();
 
         WalletTransaction storeCredit = WalletTransaction.builder()
-                .wallet(storeWallet)
+                .wallet(savedStoreWallet)
                 .type(WalletTransactionType.PAYMENT_CREDIT)
                 .amount(event.totalAmount())
                 .description("Crédito do pedido " + event.localOrderId())
@@ -150,7 +171,12 @@ public class PaymentProcessingService {
 
         paymentProcessedPublisher.publish(toProcessedEvent(savedTransaction));
 
-        log.info("Payment approved for order {}", event.orderId());
+        log.info(
+                "Payment approved for order {}. customerBalance={}, storePendingBalance={}",
+                event.orderId(),
+                savedCustomerWallet.getBalance(),
+                savedStoreWallet.getPendingBalance()
+        );
     }
 
     private PaymentTransaction createRejectedTransaction(
@@ -174,7 +200,14 @@ public class PaymentProcessingService {
 
         PaymentTransaction savedTransaction = paymentTransactionRepository.save(transaction);
 
-        log.warn("Payment rejected for order {}: {}", event.orderId(), reason);
+        log.warn(
+                "Payment rejected for order {}: {}. storeId={}, customerId={}, amount={}",
+                event.orderId(),
+                reason,
+                event.storeId(),
+                event.customerId(),
+                event.totalAmount()
+        );
 
         return savedTransaction;
     }

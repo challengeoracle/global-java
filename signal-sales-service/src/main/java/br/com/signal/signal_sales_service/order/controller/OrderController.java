@@ -3,6 +3,7 @@ package br.com.signal.signal_sales_service.order.controller;
 import br.com.signal.signal_sales_service.order.dto.request.CreateOrderRequest;
 import br.com.signal.signal_sales_service.order.dto.response.OrderResponse;
 import br.com.signal.signal_sales_service.order.service.OrderService;
+import br.com.signal.signal_sales_service.shared.dto.response.PageResponse;
 import br.com.signal.signal_sales_service.sync.dto.request.OrderSyncRequest;
 import br.com.signal.signal_sales_service.sync.dto.response.OrderSyncResponse;
 import br.com.signal.signal_sales_service.sync.service.OrderSyncService;
@@ -30,6 +31,15 @@ public class OrderController {
         return ResponseEntity.ok(orderService.findMyOrders(authorization));
     }
 
+    @GetMapping("/me/page")
+    public ResponseEntity<PageResponse<OrderResponse>> findMyOrdersPage(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(orderService.findMyOrdersPage(authorization, page, size));
+    }
+
     @GetMapping("/me/sales")
     public ResponseEntity<List<OrderResponse>> findMySales(
             @RequestHeader("Authorization") String authorization
@@ -37,11 +47,29 @@ public class OrderController {
         return ResponseEntity.ok(orderService.findMySales(authorization));
     }
 
+    @GetMapping("/me/sales/page")
+    public ResponseEntity<PageResponse<OrderResponse>> findMySalesPage(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(orderService.findMySalesPage(authorization, page, size));
+    }
+
     @GetMapping("/me/purchases")
     public ResponseEntity<List<OrderResponse>> findMyPurchases(
             @RequestHeader("Authorization") String authorization
     ) {
         return ResponseEntity.ok(orderService.findMyPurchases(authorization));
+    }
+
+    @GetMapping("/me/purchases/page")
+    public ResponseEntity<PageResponse<OrderResponse>> findMyPurchasesPage(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(orderService.findMyPurchasesPage(authorization, page, size));
     }
 
     @PostMapping

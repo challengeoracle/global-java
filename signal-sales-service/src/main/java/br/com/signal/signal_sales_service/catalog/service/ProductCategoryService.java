@@ -15,7 +15,9 @@ import br.com.signal.signal_sales_service.shared.exception.NotFoundException;
 import br.com.signal.signal_sales_service.catalog.repository.ProductCategoryRepository;
 import br.com.signal.signal_sales_service.catalog.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +31,8 @@ public class ProductCategoryService {
     private final ProductRepository productRepository;
     private final AuthIdentityService authIdentityService;
 
+    @Transactional
+    @CacheEvict(cacheNames = {"catalogByStore", "productById", "productsByStore"}, allEntries = true)
     public CategoryResponse create(CreateCategoryRequest request, String authorization) {
         AuthUserResponse authUser = authIdentityService.requireSeller(authorization);
         String categoryName = request.getName().trim();
@@ -54,6 +58,7 @@ public class ProductCategoryService {
         return CategoryMapper.toResponse(category);
     }
 
+    @Transactional(readOnly = true)
     public List<CategoryResponse> findMyCategories(String authorization) {
         AuthUserResponse authUser = authIdentityService.requireSeller(authorization);
 
@@ -64,6 +69,7 @@ public class ProductCategoryService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public CategoryWithProductsResponse findMyCategoryById(UUID id, String authorization) {
         AuthUserResponse authUser = authIdentityService.requireSeller(authorization);
         ProductCategory category = findCategoryForStore(id, authUser.getStoreId());
@@ -75,6 +81,8 @@ public class ProductCategoryService {
         return CategoryMapper.toWithProductsResponse(category, products);
     }
 
+    @Transactional
+    @CacheEvict(cacheNames = {"catalogByStore", "productById", "productsByStore"}, allEntries = true)
     public CategoryResponse update(UUID id, UpdateCategoryRequest request, String authorization) {
         AuthUserResponse authUser = authIdentityService.requireSeller(authorization);
         ProductCategory category = findCategoryForStore(id, authUser.getStoreId());
@@ -102,6 +110,8 @@ public class ProductCategoryService {
         return CategoryMapper.toResponse(category);
     }
 
+    @Transactional
+    @CacheEvict(cacheNames = {"catalogByStore", "productById", "productsByStore"}, allEntries = true)
     public void deactivate(UUID id, String authorization) {
         AuthUserResponse authUser = authIdentityService.requireSeller(authorization);
         ProductCategory category = findCategoryForStore(id, authUser.getStoreId());

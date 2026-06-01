@@ -1,6 +1,8 @@
 package br.com.signal.signal_payment_service.payment.repository;
 
 import br.com.signal.signal_payment_service.payment.entity.PaymentTransaction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,5 +15,9 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 
     List<PaymentTransaction> findByStoreIdOrderByCreatedAtDesc(UUID storeId);
 
+    Page<PaymentTransaction> findByStoreIdOrderByCreatedAtDesc(UUID storeId, Pageable pageable);
+
     List<PaymentTransaction> findByCustomerIdOrderByCreatedAtDesc(UUID customerId);
+
+    Page<PaymentTransaction> findByCustomerIdOrderByCreatedAtDesc(UUID customerId, Pageable pageable);
 }

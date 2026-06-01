@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class OfflineOrderRequest {
 
     @NotBlank(message = "Local order id is required")
+    @Size(max = 100, message = "Local order id must have at most 100 characters")
     private String localOrderId;
 
     private UUID customerId;

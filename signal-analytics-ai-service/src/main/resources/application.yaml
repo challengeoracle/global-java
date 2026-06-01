@@ -14,6 +14,19 @@ spring:
           model: ${GROQ_MODEL:llama-3.1-8b-instant}
           temperature: ${AI_TEMPERATURE:0.2}
           maxTokens: ${AI_MAX_TOKENS:220}
+    mcp:
+      server:
+        name: ${AI_MCP_SERVER_NAME:offpay-insights-mcp}
+        version: ${AI_MCP_SERVER_VERSION:1.0.0}
+        type: SYNC
+        instructions: >
+          MCP server do OffPay para consulta de regras operacionais, fluxo offline-first,
+          pagamentos, sincronizacao e contexto de analytics.
+        sse-endpoint: /mcp/messages
+        sse-message-endpoint: /mcp/sse
+        capabilities:
+          tool: true
+          resource: true
 
   cloud:
     inetutils:

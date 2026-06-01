@@ -15,6 +15,9 @@ import br.com.signal.signal_payment_service.wallet.mapper.WalletMapper;
 import br.com.signal.signal_payment_service.wallet.repository.WalletRepository;
 import br.com.signal.signal_payment_service.wallet.repository.WalletTransactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +35,7 @@ public class WalletService {
     private final WalletTransactionRepository walletTransactionRepository;
     private final WalletMapper walletMapper;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public WalletResponse findMyWallet(String authorization) {
         AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
         Wallet wallet = getOrCreateWalletForUser(authUser);
@@ -40,7 +43,7 @@ public class WalletService {
         return walletMapper.toResponse(wallet);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public WalletResponse findMyPersonalWallet(String authorization) {
         AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
         Wallet wallet = getOrCreatePersonalWallet(authUser.getId());
@@ -119,7 +122,7 @@ public class WalletService {
         return walletMapper.toResponse(savedWallet);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<WalletTransactionResponse> findMyTransactions(String authorization) {
         AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
         Wallet wallet = getOrCreateWalletForUser(authUser);
@@ -130,7 +133,7 @@ public class WalletService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<WalletTransactionResponse> findMyPersonalTransactions(String authorization) {
         AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
         Wallet wallet = getOrCreatePersonalWallet(authUser.getId());
@@ -139,6 +142,30 @@ public class WalletService {
                 .stream()
                 .map(walletMapper::toTransactionResponse)
                 .toList();
+    }
+
+    @Transactional
+    public br.com.signal.signal_payment_service.shared.dto.response.PageResponse<WalletTransactionResponse> findMyTransactionsPage(String authorization, int page, int size) {
+        AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
+        Wallet wallet = getOrCreateWalletForUser(authUser);
+        Pageable pageable = PageRequest.of(page, size);
+
+        return br.com.signal.signal_payment_service.shared.dto.response.PageResponse.from(
+                walletTransactionRepository.findByWalletIdOrderByCreatedAtDesc(wallet.getId(), pageable)
+                        .map(walletMapper::toTransactionResponse)
+        );
+    }
+
+    @Transactional
+    public br.com.signal.signal_payment_service.shared.dto.response.PageResponse<WalletTransactionResponse> findMyPersonalTransactionsPage(String authorization, int page, int size) {
+        AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
+        Wallet wallet = getOrCreatePersonalWallet(authUser.getId());
+        Pageable pageable = PageRequest.of(page, size);
+
+        return br.com.signal.signal_payment_service.shared.dto.response.PageResponse.from(
+                walletTransactionRepository.findByWalletIdOrderByCreatedAtDesc(wallet.getId(), pageable)
+                        .map(walletMapper::toTransactionResponse)
+        );
     }
 
     @Transactional
@@ -165,31 +192,54 @@ public class WalletService {
 
     @Transactional
     public Wallet getOrCreateCustomerWallet(UUID customerId) {
-        return walletRepository.findByOwnerIdAndOwnerType(customerId, WalletOwnerType.CUSTOMER)
-                .orElseGet(() -> walletRepository.save(
-                        Wallet.builder()
-                                .ownerId(customerId)
-                                .ownerType(WalletOwnerType.CUSTOMER)
-                                .balance(BigDecimal.ZERO)
-                                .pendingBalance(BigDecimal.ZERO)
-                                .createdAt(LocalDateTime.now())
-                                .updatedAt(LocalDateTime.now())
-                                .build()
-                ));
+        return getOrCreateWallet(customerId, WalletOwnerType.CUSTOMER, false);
     }
 
     @Transactional
     public Wallet getOrCreateStoreWallet(UUID storeId) {
-        return walletRepository.findByOwnerIdAndOwnerType(storeId, WalletOwnerType.STORE)
-                .orElseGet(() -> walletRepository.save(
-                        Wallet.builder()
-                                .ownerId(storeId)
-                                .ownerType(WalletOwnerType.STORE)
-                                .balance(BigDecimal.ZERO)
-                                .pendingBalance(BigDecimal.ZERO)
-                                .createdAt(LocalDateTime.now())
-                                .updatedAt(LocalDateTime.now())
-                                .build()
-                ));
+        return getOrCreateWallet(storeId, WalletOwnerType.STORE, false);
+    }
+
+    @Transactional
+    public Wallet getOrCreateCustomerWalletForUpdate(UUID customerId) {
+        return getOrCreateWallet(customerId, WalletOwnerType.CUSTOMER, true);
+    }
+
+    @Transactional
+    public Wallet getOrCreateStoreWalletForUpdate(UUID storeId) {
+        return getOrCreateWallet(storeId, WalletOwnerType.STORE, true);
+    }
+
+    private Wallet getOrCreateWallet(UUID ownerId, WalletOwnerType ownerType, boolean forUpdate) {
+        return findWallet(ownerId, ownerType, forUpdate)
+                .orElseGet(() -> createWallet(ownerId, ownerType, forUpdate));
+    }
+
+    private java.util.Optional<Wallet> findWallet(UUID ownerId, WalletOwnerType ownerType, boolean forUpdate) {
+        if (forUpdate) {
+            return walletRepository.findByOwnerIdAndOwnerTypeForUpdate(ownerId, ownerType);
+        }
+
+        return walletRepository.findByOwnerIdAndOwnerType(ownerId, ownerType);
+    }
+
+    private Wallet createWallet(UUID ownerId, WalletOwnerType ownerType, boolean forUpdate) {
+        LocalDateTime now = LocalDateTime.now();
+
+        try {
+            return walletRepository.save(
+                    Wallet.builder()
+                            .ownerId(ownerId)
+                            .ownerType(ownerType)
+                            .balance(BigDecimal.ZERO)
+                            .pendingBalance(BigDecimal.ZERO)
+                            .createdAt(now)
+                            .updatedAt(now)
+                            .build()
+            );
+        } catch (DataIntegrityViolationException ex) {
+            return findWallet(ownerId, ownerType, forUpdate)
+                    .orElseThrow(() -> ex);
+        }
     }
 }

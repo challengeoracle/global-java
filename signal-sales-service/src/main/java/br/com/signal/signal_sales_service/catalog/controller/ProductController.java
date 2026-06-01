@@ -1,9 +1,10 @@
 package br.com.signal.signal_sales_service.catalog.controller;
 
 import br.com.signal.signal_sales_service.catalog.dto.request.CreateProductRequest;
-import br.com.signal.signal_sales_service.catalog.dto.response.ProductResponse;
 import br.com.signal.signal_sales_service.catalog.dto.request.UpdateProductRequest;
+import br.com.signal.signal_sales_service.catalog.dto.response.ProductResponse;
 import br.com.signal.signal_sales_service.catalog.service.ProductService;
+import br.com.signal.signal_sales_service.shared.dto.response.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,14 @@ public class ProductController {
         );
     }
 
+    @GetMapping("/page")
+    public ResponseEntity<PageResponse<ProductResponse>> findAllActivePage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(productService.findAllActivePage(page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> findById(
             @PathVariable UUID id
@@ -54,6 +63,15 @@ public class ProductController {
         );
     }
 
+    @GetMapping("/store/{storeId}/page")
+    public ResponseEntity<PageResponse<ProductResponse>> findByStorePage(
+            @PathVariable UUID storeId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(productService.findByStorePage(storeId, page, size));
+    }
+
     @GetMapping("/store/{storeId}/category/{categoryId}")
     public ResponseEntity<List<ProductResponse>> findByStoreAndCategory(
             @PathVariable UUID storeId,
@@ -64,6 +82,16 @@ public class ProductController {
         );
     }
 
+    @GetMapping("/store/{storeId}/category/{categoryId}/page")
+    public ResponseEntity<PageResponse<ProductResponse>> findByStoreAndCategoryPage(
+            @PathVariable UUID storeId,
+            @PathVariable UUID categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(productService.findByStoreAndCategoryPage(storeId, categoryId, page, size));
+    }
+
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<ProductResponse>> findByCategory(
             @PathVariable UUID categoryId
@@ -71,6 +99,15 @@ public class ProductController {
         return ResponseEntity.ok(
                 productService.findByCategory(categoryId)
         );
+    }
+
+    @GetMapping("/category/{categoryId}/page")
+    public ResponseEntity<PageResponse<ProductResponse>> findByCategoryPage(
+            @PathVariable UUID categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(productService.findByCategoryPage(categoryId, page, size));
     }
 
     @PutMapping("/{id}")
