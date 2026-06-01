@@ -27,20 +27,14 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
-            throws Exception {
-
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-
                 .cors(Customizer.withDefaults())
-
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
                 .exceptionHandling(exception -> exception
-
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
@@ -55,7 +49,6 @@ public class SecurityConfig {
                                     }
                                     """.formatted(LocalDateTime.now()));
                         })
-
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json");
@@ -71,9 +64,7 @@ public class SecurityConfig {
                                     """.formatted(LocalDateTime.now()));
                         })
                 )
-
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         .requestMatchers(
@@ -84,55 +75,24 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/category", "/category/**")
+                        .requestMatchers(HttpMethod.GET, "/analytics/me/summary")
                         .authenticated()
 
-                        .requestMatchers(HttpMethod.POST, "/category", "/category/**")
+                        .requestMatchers(HttpMethod.GET, "/analytics/seller/**")
                         .hasRole("SELLER")
 
-                        .requestMatchers(HttpMethod.GET, "/product", "/product/**")
-                        .authenticated()
-
-                        .requestMatchers(HttpMethod.POST, "/product", "/product/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.PUT, "/product", "/product/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.DELETE, "/product", "/product/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.GET, "/catalog/me")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.GET, "/catalog", "/catalog/**")
-                        .authenticated()
-
-                        .requestMatchers(HttpMethod.POST, "/catalog/sync")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.POST, "/order")
+                        .requestMatchers(HttpMethod.GET, "/analytics/customer/**")
                         .hasRole("CUSTOMER")
 
-                        .requestMatchers(HttpMethod.POST, "/order/sync")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.GET, "/order/me")
+                        .requestMatchers(HttpMethod.POST, "/ai/insights/ask")
                         .authenticated()
 
-                        .requestMatchers(HttpMethod.GET, "/order/store/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.GET, "/order/customer/**")
-                        .hasRole("CUSTOMER")
-
-                        .requestMatchers(HttpMethod.GET, "/order", "/order/**")
+                        .requestMatchers("/analytics/**", "/ai/**")
                         .authenticated()
 
                         .anyRequest()
                         .authenticated()
                 )
-
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -143,22 +103,14 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of("*"));
-
-        configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        );
-
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-
         configuration.setExposedHeaders(List.of("Authorization"));
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 
         return source;

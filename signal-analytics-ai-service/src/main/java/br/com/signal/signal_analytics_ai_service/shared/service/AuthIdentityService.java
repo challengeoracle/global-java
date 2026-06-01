@@ -25,4 +25,24 @@ public class AuthIdentityService {
 
         return authUser;
     }
+
+    public AuthUserResponse requireSeller(String authorization) {
+        AuthUserResponse authUser = me(authorization);
+
+        if (!authUser.isSeller()) {
+            throw new ForbiddenException("Only sellers can access this resource");
+        }
+
+        return authUser;
+    }
+
+    public AuthUserResponse requireCustomer(String authorization) {
+        AuthUserResponse authUser = me(authorization);
+
+        if (!authUser.isCustomer()) {
+            throw new ForbiddenException("Only customers can access this resource");
+        }
+
+        return authUser;
+    }
 }
