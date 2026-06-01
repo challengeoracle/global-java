@@ -1,0 +1,71 @@
+package br.com.signal.signal_analytics_ai_service.ai.tool;
+
+import br.com.signal.signal_analytics_ai_service.ai.knowledge.KnowledgeRetrievalService;
+import br.com.signal.signal_analytics_ai_service.ai.knowledge.KnowledgeSnippet;
+import br.com.signal.signal_analytics_ai_service.analytics.dto.response.AnalyticsSummaryResponse;
+import br.com.signal.signal_analytics_ai_service.analytics.dto.response.CustomerSummaryResponse;
+import br.com.signal.signal_analytics_ai_service.analytics.dto.response.SellerSummaryResponse;
+import br.com.signal.signal_analytics_ai_service.analytics.dto.response.TopProductResponse;
+import br.com.signal.signal_analytics_ai_service.analytics.service.AnalyticsSummaryService;
+import br.com.signal.signal_analytics_ai_service.shared.dto.response.AuthUserResponse;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class InsightRuntimeTools {
+
+    private final String authorization;
+    private final AuthUserResponse authUser;
+    private final AnalyticsSummaryService analyticsSummaryService;
+    private final KnowledgeRetrievalService knowledgeRetrievalService;
+
+    public InsightRuntimeTools(
+            String authorization,
+            AuthUserResponse authUser,
+            AnalyticsSummaryService analyticsSummaryService,
+            KnowledgeRetrievalService knowledgeRetrievalService
+    ) {
+        this.authorization = authorization;
+        this.authUser = authUser;
+        this.analyticsSummaryService = analyticsSummaryService;
+        this.knowledgeRetrievalService = knowledgeRetrievalService;
+    }
+
+    @Tool(description = "Retorna um resumo operacional e financeiro agregado do usuario autenticado.")
+    public AnalyticsSummaryResponse getMyAnalyticsSummary() {
+        return analyticsSummaryService.getMySummary(authorization);
+    }
+
+    @Tool(description = "Retorna um resumo detalhado de vendedor ou cliente conforme o papel do usuario autenticado.")
+    public Object getRoleSpecificSummary() {
+        if (authUser.isSeller()) {
+            SellerSummaryResponse summary = analyticsSummaryService.getSellerSummary(authorization);
+            List<TopProductResponse> topProducts = analyticsSummaryService.getSellerTopProducts(authorization);
+            return new SellerRuntimeSummary(summary, topProducts);
+        }
+
+        CustomerSummaryResponse summary = analyticsSummaryService.getCustomerSummary(authorization);
+        return summary;
+    }
+
+    @Tool(description = "Busca regras operacionais e trechos de conhecimento relevantes para responder a pergunta do usuario.")
+    public String searchOperationalKnowledge(@ToolParam(description = "Pergunta ou topico a ser pesquisado.") String question) {
+        List<KnowledgeSnippet> snippets = knowledgeRetrievalService.retrieve(authUser, question);
+        return knowledgeRetrievalService.renderContext(snippets);
+    }
+
+    @Tool(description = "Lista as fontes de conhecimento disponiveis no runtime do OffPay.")
+    public List<String> listKnowledgeSources() {
+        return knowledgeRetrievalService.listAvailableSources().stream()
+                .map(source -> source.id() + " - " + source.title())
+                .collect(Collectors.toList());
+    }
+
+    public record SellerRuntimeSummary(
+            SellerSummaryResponse summary,
+            List<TopProductResponse> topProducts
+    ) {
+    }
+}
