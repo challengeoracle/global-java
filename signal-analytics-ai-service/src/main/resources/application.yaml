@@ -13,6 +13,7 @@ spring:
         options:
           model: ${GROQ_MODEL:llama-3.1-8b-instant}
           temperature: ${AI_TEMPERATURE:0.2}
+          maxTokens: ${AI_MAX_TOKENS:220}
 
   cloud:
     inetutils:
