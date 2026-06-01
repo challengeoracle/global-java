@@ -15,7 +15,10 @@ public final class OrderMapper {
     public static OrderResponse toResponse(SalesOrder order) {
         List<OrderItemResponse> items = order.getItems() == null
                 ? List.of()
-                : order.getItems().stream().map(OrderMapper::toItemResponse).toList();
+                : order.getItems()
+                .stream()
+                .map(OrderMapper::toItemResponse)
+                .toList();
 
         return OrderResponse.builder()
                 .id(order.getId())
