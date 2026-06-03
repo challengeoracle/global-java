@@ -60,7 +60,6 @@ public class OrderService {
                 request.getStoreId(),
                 authUser.getId(),
                 null,
-                request.getDeviceId(),
                 SyncStatus.ONLINE,
                 null,
                 request.getItems()
@@ -213,7 +212,6 @@ public class OrderService {
             UUID storeId,
             UUID customerId,
             UUID sellerId,
-            String deviceId,
             SyncStatus syncStatus,
             LocalDateTime offlineCreatedAt,
             List<OrderItemRequest> itemRequests
@@ -227,7 +225,6 @@ public class OrderService {
                 .storeId(storeId)
                 .customerId(customerId)
                 .sellerId(sellerId)
-                .deviceId(deviceId)
                 .orderStatus(OrderStatus.CREATED)
                 .paymentStatus(PaymentStatus.PENDING_PAYMENT)
                 .syncStatus(syncStatus)

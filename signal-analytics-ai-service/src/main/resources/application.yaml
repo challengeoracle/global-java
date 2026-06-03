@@ -5,15 +5,46 @@ spring:
   application:
     name: signal-analytics-ai-service
 
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:2}
+      minimum-idle: ${DB_MIN_IDLE:0}
+      idle-timeout: ${DB_IDLE_TIMEOUT:10000}
+      max-lifetime: ${DB_MAX_LIFETIME:120000}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+
+  jpa:
+    database-platform: org.hibernate.dialect.OracleDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: "0"
+    validate-on-migrate: true
+    table: flyway_schema_history_analytics
+
   ai:
     openai:
       api-key: ${GROQ_API_KEY}
-      base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+      base-url: ${GROQ_BASE_URL:https://api.groq.com/openai}
       chat:
         options:
           model: ${GROQ_MODEL:llama-3.1-8b-instant}
           temperature: ${AI_TEMPERATURE:0.2}
-          maxTokens: ${AI_MAX_TOKENS:220}
+          maxTokens: ${AI_MAX_TOKENS:160}
+
     mcp:
       server:
         name: ${AI_MCP_SERVER_NAME:offpay-insights-mcp}
@@ -57,6 +88,17 @@ logging:
   level:
     root: warn
     br.com.signal.signal_analytics_ai_service: info
+    org.hibernate.SQL: off
+    org.hibernate.orm.jdbc.bind: off
+    org.hibernate.type.descriptor.sql: off
     org.springframework.security: warn
     org.springframework.web: warn
     org.springframework.ai: info
+    org.flywaydb: info
+    com.zaxxer.hikari: warn
+
+knowledge:
+  pdf:
+    path: ${AI_RULES_PDF_PATH:classpath:knowledge/offpay_rules.pdf}
+  retrieval:
+    max-chunks: ${AI_RETRIEVAL_MAX_CHUNKS:3}

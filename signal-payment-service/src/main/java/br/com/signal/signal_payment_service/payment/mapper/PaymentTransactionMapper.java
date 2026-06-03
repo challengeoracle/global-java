@@ -19,6 +19,8 @@ public class PaymentTransactionMapper {
                 .status(transaction.getStatus())
                 .failureReason(transaction.getFailureReason())
                 .gatewayReference(transaction.getGatewayReference())
+                .creditDebtAmount(transaction.getCreditDebtAmount())
+                .creditDebtSettledAt(transaction.getCreditDebtSettledAt())
                 .createdAt(transaction.getCreatedAt())
                 .processedAt(transaction.getProcessedAt())
                 .build();

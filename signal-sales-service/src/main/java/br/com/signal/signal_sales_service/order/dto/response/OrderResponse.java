@@ -19,7 +19,6 @@ public class OrderResponse {
     private UUID storeId;
     private UUID customerId;
     private UUID sellerId;
-    private String deviceId;
 
     private String orderStatus;
     private String paymentStatus;

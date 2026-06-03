@@ -13,6 +13,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -37,6 +38,7 @@ public class PaymentProcessedOutboxDispatcher {
     @Value("${offpay.rabbit.payment-processed-routing-key}")
     private String paymentProcessedRoutingKey;
 
+    @Transactional
     @Scheduled(initialDelay = 15000, fixedDelay = 15000)
     public void retryPendingEvents() {
         for (UUID pendingId : outboxRepository.findRetryable(LocalDateTime.now()).stream().map(PaymentProcessedOutbox::getId).toList()) {
@@ -44,7 +46,7 @@ public class PaymentProcessedOutboxDispatcher {
         }
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void dispatchSingle(UUID outboxId) {
         outboxRepository.findByIdForUpdate(outboxId).ifPresent(outbox -> {
             if (outbox.getStatus() == PaymentProcessedOutboxStatus.SENT) {

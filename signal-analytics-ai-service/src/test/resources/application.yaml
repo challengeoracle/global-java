@@ -1,0 +1,60 @@
+server:
+  port: 0
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:analytics-ai-test;MODE=Oracle;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    enabled: false
+
+  ai:
+    openai:
+      api-key: test-key
+      base-url: https://api.groq.com/openai
+      chat:
+        options:
+          model: llama-3.1-8b-instant
+          temperature: 0.2
+          maxTokens: 160
+    mcp:
+      server:
+        name: offpay-insights-mcp-test
+        version: 1.0.0
+        type: SYNC
+        sse-endpoint: /mcp/messages
+        sse-message-endpoint: /mcp/sse
+        capabilities:
+          tool: true
+          resource: true
+
+auth:
+  service-url: http://localhost:8081
+
+services:
+  sales:
+    url: http://localhost:8082
+  payment:
+    url: http://localhost:8083
+
+jwt:
+  secret: 12345678901234567890123456789012
+  expiration-minutes: 120
+
+knowledge:
+  pdf:
+    path: classpath:knowledge/offpay_rules.pdf
+  retrieval:
+    max-chunks: 3

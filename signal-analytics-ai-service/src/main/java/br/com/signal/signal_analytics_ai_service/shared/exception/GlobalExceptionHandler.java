@@ -70,6 +70,20 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyRequests(
+            TooManyRequestsException ex
+    ) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.TOO_MANY_REQUESTS.value())
+                        .error("Too Many Requests")
+                        .message(ex.getMessage())
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(
             MethodArgumentNotValidException ex
@@ -86,6 +100,20 @@ public class GlobalExceptionHandler {
                         .status(HttpStatus.BAD_REQUEST.value())
                         .error("Validation Error")
                         .message(message)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(
+            Exception ex
+    ) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ErrorResponse.builder()
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                        .error("Internal Server Error")
+                        .message("Nao foi possivel concluir a solicitacao de IA no momento.")
                         .timestamp(LocalDateTime.now())
                         .build()
         );

@@ -4,6 +4,7 @@ public enum WalletTransactionType {
     DEPOSIT,
     PAYMENT_DEBIT,
     PAYMENT_CREDIT,
+    DEBT_PAYMENT,
     SETTLEMENT,
     WITHDRAW,
     REFUND

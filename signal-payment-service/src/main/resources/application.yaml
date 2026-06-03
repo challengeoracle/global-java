@@ -27,7 +27,7 @@ spring:
         format_sql: true
 
   flyway:
-    enabled: ${FLYWAY_ENABLED:false}
+    enabled: ${FLYWAY_ENABLED:true}
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: "0"
@@ -57,6 +57,7 @@ offpay:
     sales-exchange: offpay.sales.exchange
     payment-exchange: offpay.payment.exchange
     payment-requested-queue: offpay.payment.requested.queue
+    payment-processed-queue: offpay.sales.payment.processed.queue
     payment-requested-routing-key: payment.requested
     payment-processed-routing-key: payment.processed
 

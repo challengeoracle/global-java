@@ -11,8 +11,8 @@
 	<groupId>br.com.signal</groupId>
 	<artifactId>signal-auth-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>signal-auth-service</name>
+	<description>Authentication and identity service for OffPay</description>
 	<url/>
 	<licenses>
 		<license/>

@@ -30,9 +30,6 @@ public class CatalogSyncLog {
     @JoinColumn(name = "PRODUCT_ID")
     private Product product;
 
-    @Column(name = "DEVICE_ID", length = 150)
-    private String deviceId;
-
     @Column(name = "OPERATION_ID", length = 100)
     private String operationId;
 

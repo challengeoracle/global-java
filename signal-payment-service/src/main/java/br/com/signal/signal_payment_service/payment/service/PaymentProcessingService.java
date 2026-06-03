@@ -110,36 +110,19 @@ public class PaymentProcessingService {
         }
 
         Wallet customerWallet = walletService.getOrCreateCustomerWalletForUpdate(event.customerId());
-
-        if (customerWallet.getBalance().compareTo(event.totalAmount()) < 0) {
-            PaymentTransaction transaction = createRejectedTransaction(
-                    event,
-                    "Insufficient wallet balance",
-                    now
-            );
-
-            paymentProcessedPublisher.publish(toProcessedEvent(transaction));
-            return;
-        }
+        BigDecimal availableBalance = customerWallet.getBalance();
+        BigDecimal coveredAmount = minPositive(availableBalance, event.totalAmount());
+        BigDecimal creditDebtAmount = event.totalAmount().subtract(coveredAmount);
 
         Wallet storeWallet = walletService.getOrCreateStoreWalletForUpdate(event.storeId());
 
-        customerWallet.setBalance(customerWallet.getBalance().subtract(event.totalAmount()));
+        customerWallet.setBalance(customerWallet.getBalance().subtract(coveredAmount));
         customerWallet.setUpdatedAt(now);
         storeWallet.setPendingBalance(storeWallet.getPendingBalance().add(event.totalAmount()));
         storeWallet.setUpdatedAt(now);
 
         Wallet savedCustomerWallet = walletRepository.save(customerWallet);
         Wallet savedStoreWallet = walletRepository.save(storeWallet);
-
-        WalletTransaction customerDebit = WalletTransaction.builder()
-                .wallet(savedCustomerWallet)
-                .type(WalletTransactionType.PAYMENT_DEBIT)
-                .amount(event.totalAmount())
-                .description("Pagamento do pedido " + event.localOrderId())
-                .referenceId(event.orderId().toString())
-                .createdAt(now)
-                .build();
 
         WalletTransaction storeCredit = WalletTransaction.builder()
                 .wallet(savedStoreWallet)
@@ -150,7 +133,18 @@ public class PaymentProcessingService {
                 .createdAt(now)
                 .build();
 
-        walletTransactionRepository.save(customerDebit);
+        if (coveredAmount.compareTo(BigDecimal.ZERO) > 0) {
+            WalletTransaction customerDebit = WalletTransaction.builder()
+                    .wallet(savedCustomerWallet)
+                    .type(WalletTransactionType.PAYMENT_DEBIT)
+                    .amount(coveredAmount)
+                    .description("Pagamento do pedido " + event.localOrderId())
+                    .referenceId(event.orderId().toString())
+                    .createdAt(now)
+                    .build();
+
+            walletTransactionRepository.save(customerDebit);
+        }
         walletTransactionRepository.save(storeCredit);
 
         PaymentTransaction transaction = PaymentTransaction.builder()
@@ -163,6 +157,8 @@ public class PaymentProcessingService {
                 .status(PaymentTransactionStatus.APPROVED)
                 .failureReason(null)
                 .gatewayReference("OFFPAY-" + UUID.randomUUID())
+                .creditDebtAmount(creditDebtAmount)
+                .creditDebtSettledAt(creditDebtAmount.compareTo(BigDecimal.ZERO) > 0 ? null : now)
                 .createdAt(now)
                 .processedAt(now)
                 .build();
@@ -172,10 +168,11 @@ public class PaymentProcessingService {
         paymentProcessedPublisher.publish(toProcessedEvent(savedTransaction));
 
         log.info(
-                "Payment approved for order {}. customerBalance={}, storePendingBalance={}",
+                "Payment approved for order {}. customerBalance={}, storePendingBalance={}, creditDebtAmount={}",
                 event.orderId(),
                 savedCustomerWallet.getBalance(),
-                savedStoreWallet.getPendingBalance()
+                savedStoreWallet.getPendingBalance(),
+                creditDebtAmount
         );
     }
 
@@ -194,6 +191,7 @@ public class PaymentProcessingService {
                 .status(PaymentTransactionStatus.REJECTED)
                 .failureReason(reason)
                 .gatewayReference("OFFPAY-" + UUID.randomUUID())
+                .creditDebtAmount(BigDecimal.ZERO)
                 .createdAt(processedAt)
                 .processedAt(processedAt)
                 .build();
@@ -228,5 +226,13 @@ public class PaymentProcessingService {
                 transaction.getFailureReason(),
                 transaction.getProcessedAt()
         );
+    }
+
+    private BigDecimal minPositive(BigDecimal availableBalance, BigDecimal amount) {
+        if (availableBalance == null || availableBalance.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return availableBalance.min(amount);
     }
 }

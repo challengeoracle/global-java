@@ -19,7 +19,6 @@ public class AuthUserResponse {
     private String role;
     private UUID storeId;
     private String storeName;
-    private String deviceId;
 
     public boolean isSeller() {
         return "SELLER".equals(role);

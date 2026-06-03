@@ -1,6 +1,7 @@
 package br.com.signal.signal_sales_service.sync.service;
 
 import br.com.signal.signal_sales_service.order.entity.SalesOrder;
+import br.com.signal.signal_sales_service.order.entity.enums.PaymentStatus;
 import br.com.signal.signal_sales_service.order.messaging.OrderEventPublisher;
 import br.com.signal.signal_sales_service.order.repository.SalesOrderRepository;
 import br.com.signal.signal_sales_service.order.service.OrderService;
@@ -50,14 +51,13 @@ public class OrderSyncService {
         }
 
         LocalDateTime syncedAt = LocalDateTime.now();
-        String deviceId = request.getDeviceId();
         List<SyncItemResponse> results = new ArrayList<>();
 
         List<OfflineOrderRequest> uniqueOrders = request.getOrders()
                 .stream()
                 .filter(order -> {
                     if (order.getLocalOrderId() == null || order.getLocalOrderId().isBlank()) {
-                        results.add(rejectMissingLocalOrderId(deviceId, authUser, syncedAt));
+                        results.add(rejectMissingLocalOrderId(authUser, syncedAt));
                         return false;
                     }
                     return true;
@@ -75,7 +75,6 @@ public class OrderSyncService {
         uniqueOrders.stream()
                 .map(orderRequest -> syncSingleOfflineOrderSafely(
                         orderRequest,
-                        deviceId,
                         authUser,
                         syncedAt
                 ))
@@ -90,7 +89,6 @@ public class OrderSyncService {
 
     private SyncItemResponse syncSingleOfflineOrderSafely(
             OfflineOrderRequest orderRequest,
-            String deviceId,
             AuthUserResponse authUser,
             LocalDateTime syncedAt
     ) {
@@ -98,23 +96,22 @@ public class OrderSyncService {
 
         try {
             return transactionTemplate.execute(status ->
-                    syncSingleOfflineOrderTransactional(orderRequest, deviceId, authUser, syncedAt)
+                    syncSingleOfflineOrderTransactional(orderRequest, authUser, syncedAt)
             );
         } catch (RuntimeException ex) {
             if (isUniqueConstraintViolation(ex)) {
                 return transactionTemplate.execute(status ->
-                        handleDuplicateAfterRollback(orderRequest, deviceId, authUser, syncedAt)
+                        handleDuplicateAfterRollback(orderRequest, authUser, syncedAt)
                 );
             }
 
             return transactionTemplate.execute(status ->
-                    handleRejectedAfterRollback(orderRequest, deviceId, authUser, syncedAt, ex.getMessage())
+                    handleRejectedAfterRollback(orderRequest, authUser, syncedAt, ex.getMessage())
             );
         }
     }
 
     private SyncItemResponse rejectMissingLocalOrderId(
-            String deviceId,
             AuthUserResponse authUser,
             LocalDateTime syncedAt
     ) {
@@ -126,7 +123,6 @@ public class OrderSyncService {
                     authUser.getStoreId(),
                     null,
                     null,
-                    deviceId,
                     "REJECTED",
                     message,
                     syncedAt
@@ -160,18 +156,17 @@ public class OrderSyncService {
 
     private SyncItemResponse syncSingleOfflineOrderTransactional(
             OfflineOrderRequest orderRequest,
-            String deviceId,
             AuthUserResponse authUser,
             LocalDateTime syncedAt
     ) {
         SalesOrder existing = findExistingOfflineOrder(orderRequest.getLocalOrderId());
 
         if (existing != null) {
+            republishPaymentIfStillPending(existing);
             createOrderSyncLog(
                     authUser.getStoreId(),
                     existing,
                     orderRequest.getLocalOrderId(),
-                    deviceId,
                     "DUPLICATE",
                     "Order already synced",
                     syncedAt
@@ -185,7 +180,6 @@ public class OrderSyncService {
                 authUser.getStoreId(),
                 orderRequest.getCustomerId(),
                 authUser.getId(),
-                deviceId,
                 SyncStatus.OFFLINE_SYNCED,
                 orderRequest.getOfflineCreatedAt(),
                 orderRequest.getItems()
@@ -195,7 +189,6 @@ public class OrderSyncService {
                 authUser.getStoreId(),
                 order,
                 orderRequest.getLocalOrderId(),
-                deviceId,
                 "APPLIED",
                 "Offline order synced successfully",
                 syncedAt
@@ -215,18 +208,17 @@ public class OrderSyncService {
 
     private SyncItemResponse handleDuplicateAfterRollback(
             OfflineOrderRequest orderRequest,
-            String deviceId,
             AuthUserResponse authUser,
             LocalDateTime syncedAt
     ) {
         SalesOrder existing = findExistingOfflineOrder(orderRequest.getLocalOrderId());
 
         if (existing != null) {
+            republishPaymentIfStillPending(existing);
             createOrderSyncLog(
                     authUser.getStoreId(),
                     existing,
                     orderRequest.getLocalOrderId(),
-                    deviceId,
                     "DUPLICATE",
                     "Order already synced",
                     syncedAt
@@ -237,7 +229,6 @@ public class OrderSyncService {
 
         return handleRejectedAfterRollback(
                 orderRequest,
-                deviceId,
                 authUser,
                 syncedAt,
                 "Order could not be synced because of a database constraint"
@@ -246,7 +237,6 @@ public class OrderSyncService {
 
     private SyncItemResponse handleRejectedAfterRollback(
             OfflineOrderRequest orderRequest,
-            String deviceId,
             AuthUserResponse authUser,
             LocalDateTime syncedAt,
             String message
@@ -257,7 +247,6 @@ public class OrderSyncService {
                 authUser.getStoreId(),
                 null,
                 orderRequest.getLocalOrderId(),
-                deviceId,
                 "REJECTED",
                 safeMessage,
                 syncedAt
@@ -281,6 +270,14 @@ public class OrderSyncService {
         return salesOrderRepository.findByLocalOrderId(localOrderId).orElse(null);
     }
 
+    private void republishPaymentIfStillPending(SalesOrder existing) {
+        if (existing == null || existing.getPaymentStatus() != PaymentStatus.PENDING_PAYMENT) {
+            return;
+        }
+
+        orderEventPublisher.publishPaymentRequested(existing);
+    }
+
     private SyncItemResponse toDuplicateSyncResponse(String localOrderId, SalesOrder existing, LocalDateTime syncedAt) {
         return SyncItemResponseMapper.forOrder(
                 localOrderId,
@@ -296,7 +293,6 @@ public class OrderSyncService {
             UUID storeId,
             SalesOrder order,
             String localOrderId,
-            String deviceId,
             String status,
             String message,
             LocalDateTime syncedAt
@@ -305,7 +301,6 @@ public class OrderSyncService {
                 .storeId(storeId)
                 .order(order)
                 .localOrderId(localOrderId)
-                .deviceId(deviceId)
                 .status(status)
                 .message(message != null && message.length() > 255 ? message.substring(0, 255) : message)
                 .syncedAt(syncedAt)

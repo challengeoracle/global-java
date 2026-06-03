@@ -25,7 +25,5 @@ public class UserResponse {
 
     private String storeName;
 
-    private String deviceId;
-
     private UUID storeId;
 }

@@ -1,6 +1,7 @@
 package br.com.signal.signal_payment_service.payment.controller;
 
 import br.com.signal.signal_payment_service.payment.dto.response.PaymentTransactionResponse;
+import br.com.signal.signal_payment_service.payment.service.PaymentDebtService;
 import br.com.signal.signal_payment_service.payment.service.PaymentTransactionQueryService;
 import br.com.signal.signal_payment_service.shared.dto.response.PageResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.UUID;
 public class PaymentTransactionController {
 
     private final PaymentTransactionQueryService paymentTransactionQueryService;
+    private final PaymentDebtService paymentDebtService;
 
     @GetMapping("/me")
     public List<PaymentTransactionResponse> findMyTransactions(
@@ -38,5 +40,13 @@ public class PaymentTransactionController {
             @PathVariable UUID orderId
     ) {
         return paymentTransactionQueryService.findByOrderId(authorization, orderId);
+    }
+
+    @PostMapping("/order/{orderId}/settle-debt")
+    public PaymentTransactionResponse settleCreditDebt(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable UUID orderId
+    ) {
+        return paymentDebtService.settleCreditDebt(authorization, orderId);
     }
 }

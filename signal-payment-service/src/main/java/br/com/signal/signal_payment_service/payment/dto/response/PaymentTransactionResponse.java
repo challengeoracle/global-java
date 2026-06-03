@@ -24,6 +24,8 @@ public class PaymentTransactionResponse {
     private PaymentTransactionStatus status;
     private String failureReason;
     private String gatewayReference;
+    private BigDecimal creditDebtAmount;
+    private LocalDateTime creditDebtSettledAt;
     private LocalDateTime createdAt;
     private LocalDateTime processedAt;
 }

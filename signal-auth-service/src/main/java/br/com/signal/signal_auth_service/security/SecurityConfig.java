@@ -46,44 +46,27 @@ public class SecurityConfig {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
-
                 .cors(Customizer.withDefaults())
-
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
                         .requestMatchers(
                                 "/auth/login",
                                 "/auth/register/seller",
                                 "/auth/register/customer"
                         ).permitAll()
-
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs.yaml"
                         ).permitAll()
-
-                        .requestMatchers("/auth/me")
-                        .authenticated()
-
-                        // Legacy offline endpoints — kept for backward compatibility, not required for sales
-                        .requestMatchers("/device/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers("/customer/offline/**")
-                        .hasRole("CUSTOMER")
-
-                        .anyRequest()
-                        .authenticated()
+                        .requestMatchers("/auth/me").authenticated()
+                        .requestMatchers("/customer/offline/**").hasRole("CUSTOMER")
+                        .anyRequest().authenticated()
                 )
-
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -98,13 +81,10 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of("*"));
-
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
         );
-
         configuration.setAllowedHeaders(List.of("*"));
-
         configuration.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source =

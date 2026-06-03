@@ -227,7 +227,7 @@ public class WalletService {
         LocalDateTime now = LocalDateTime.now();
 
         try {
-            return walletRepository.save(
+            return walletRepository.saveAndFlush(
                     Wallet.builder()
                             .ownerId(ownerId)
                             .ownerType(ownerType)

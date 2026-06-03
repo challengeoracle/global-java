@@ -2,6 +2,7 @@ package br.com.signal.signal_sales_service.order.controller;
 
 import br.com.signal.signal_sales_service.order.dto.request.CreateOrderRequest;
 import br.com.signal.signal_sales_service.order.dto.response.OrderResponse;
+import br.com.signal.signal_sales_service.order.hateoas.OrderModelAssembler;
 import br.com.signal.signal_sales_service.order.service.OrderService;
 import br.com.signal.signal_sales_service.shared.dto.response.PageResponse;
 import br.com.signal.signal_sales_service.sync.dto.request.OrderSyncRequest;
@@ -9,6 +10,7 @@ import br.com.signal.signal_sales_service.sync.dto.response.OrderSyncResponse;
 import br.com.signal.signal_sales_service.sync.service.OrderSyncService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,7 @@ public class OrderController {
 
     private final OrderService orderService;
     private final OrderSyncService orderSyncService;
+    private final OrderModelAssembler orderModelAssembler;
 
     @GetMapping("/me")
     public ResponseEntity<List<OrderResponse>> findMyOrders(
@@ -96,6 +99,16 @@ public class OrderController {
             @RequestHeader("Authorization") String authorization
     ) {
         return ResponseEntity.ok(orderService.findById(id, authorization));
+    }
+
+    @GetMapping("/{id}/resource")
+    public ResponseEntity<EntityModel<OrderResponse>> findByIdResource(
+            @PathVariable UUID id,
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                orderModelAssembler.toModel(orderService.findById(id, authorization))
+        );
     }
 
     @GetMapping("/store/{storeId}")

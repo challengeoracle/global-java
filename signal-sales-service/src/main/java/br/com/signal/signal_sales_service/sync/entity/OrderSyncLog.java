@@ -31,9 +31,6 @@ public class OrderSyncLog {
     @Column(name = "LOCAL_ORDER_ID", length = 100)
     private String localOrderId;
 
-    @Column(name = "DEVICE_ID", length = 150)
-    private String deviceId;
-
     @Column(name = "STATUS", nullable = false, length = 30)
     private String status;
 

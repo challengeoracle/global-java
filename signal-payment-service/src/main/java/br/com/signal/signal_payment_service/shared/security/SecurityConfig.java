@@ -84,50 +84,20 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/category", "/category/**")
+                        .requestMatchers(HttpMethod.GET, "/wallet/**")
                         .authenticated()
 
-                        .requestMatchers(HttpMethod.POST, "/category", "/category/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.GET, "/product", "/product/**")
-                        .authenticated()
-
-                        .requestMatchers(HttpMethod.POST, "/product", "/product/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.PUT, "/product", "/product/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.DELETE, "/product", "/product/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.GET, "/catalog/me")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.GET, "/catalog", "/catalog/**")
-                        .authenticated()
-
-                        .requestMatchers(HttpMethod.POST, "/catalog/sync")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.POST, "/order")
+                        .requestMatchers(HttpMethod.POST, "/wallet/deposit")
                         .hasRole("CUSTOMER")
 
-                        .requestMatchers(HttpMethod.POST, "/order/sync")
+                        .requestMatchers(HttpMethod.POST, "/wallet/settle")
                         .hasRole("SELLER")
 
-                        .requestMatchers(HttpMethod.GET, "/order/me")
+                        .requestMatchers(HttpMethod.GET, "/payment/transactions/**")
                         .authenticated()
 
-                        .requestMatchers(HttpMethod.GET, "/order/store/**")
-                        .hasRole("SELLER")
-
-                        .requestMatchers(HttpMethod.GET, "/order/customer/**")
+                        .requestMatchers(HttpMethod.POST, "/payment/transactions/order/*/settle-debt")
                         .hasRole("CUSTOMER")
-
-                        .requestMatchers(HttpMethod.GET, "/order", "/order/**")
-                        .authenticated()
 
                         .anyRequest()
                         .authenticated()

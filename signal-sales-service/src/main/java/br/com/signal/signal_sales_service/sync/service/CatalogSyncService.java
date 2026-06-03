@@ -11,6 +11,7 @@ import br.com.signal.signal_sales_service.sync.dto.response.SyncItemResponse;
 import br.com.signal.signal_sales_service.sync.mapper.SyncItemResponseMapper;
 import br.com.signal.signal_sales_service.shared.exception.NotFoundException;
 import br.com.signal.signal_sales_service.sync.entity.CatalogSyncLog;
+import br.com.signal.signal_sales_service.sync.entity.enums.CatalogSyncOperation;
 import br.com.signal.signal_sales_service.shared.exception.BadRequestException;
 import br.com.signal.signal_sales_service.sync.repository.CatalogSyncLogRepository;
 import br.com.signal.signal_sales_service.catalog.repository.ProductCategoryRepository;
@@ -52,14 +53,13 @@ public class CatalogSyncService {
         }
 
         LocalDateTime syncedAt = LocalDateTime.now();
-        String deviceId = request.getDeviceId();
         List<SyncItemResponse> results = new ArrayList<>();
 
         List<CatalogSyncItemRequest> uniqueChanges = request.getChanges()
                 .stream()
                 .filter(item -> {
                     if (item.getOperationId() == null || item.getOperationId().isBlank()) {
-                        results.add(rejectMissingOperationId(deviceId, authUser, syncedAt));
+                        results.add(rejectMissingOperationId(authUser, syncedAt));
                         return false;
                     }
                     return true;
@@ -77,7 +77,6 @@ public class CatalogSyncService {
         uniqueChanges.stream()
                 .map(item -> processSyncItemSafely(
                         authUser.getStoreId(),
-                        deviceId,
                         item,
                         syncedAt
                 ))
@@ -92,7 +91,6 @@ public class CatalogSyncService {
 
     private SyncItemResponse processSyncItemSafely(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
@@ -100,23 +98,22 @@ public class CatalogSyncService {
 
         try {
             return transactionTemplate.execute(status ->
-                    processSyncItemTransactional(storeId, deviceId, item, syncedAt)
+                    processSyncItemTransactional(storeId, item, syncedAt)
             );
         } catch (RuntimeException ex) {
             if (isUniqueConstraintViolation(ex)) {
                 return transactionTemplate.execute(status ->
-                        handleDuplicateAfterRollback(storeId, deviceId, item, syncedAt)
+                        handleDuplicateAfterRollback(storeId, item, syncedAt)
                 );
             }
 
             return transactionTemplate.execute(status ->
-                    handleRejectedAfterRollback(storeId, deviceId, item, syncedAt, ex.getMessage())
+                    handleRejectedAfterRollback(storeId, item, syncedAt, ex.getMessage())
             );
         }
     }
 
     private SyncItemResponse rejectMissingOperationId(
-            String deviceId,
             AuthUserResponse authUser,
             LocalDateTime syncedAt
     ) {
@@ -126,7 +123,6 @@ public class CatalogSyncService {
         return transactionTemplate.execute(status -> {
             createLog(
                     authUser.getStoreId(),
-                    deviceId,
                     null,
                     null,
                     null,
@@ -174,7 +170,6 @@ public class CatalogSyncService {
 
     private SyncItemResponse processSyncItemTransactional(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
@@ -185,13 +180,13 @@ public class CatalogSyncService {
         }
 
         SyncItemResponse response = switch (item.getOperation()) {
-            case CATEGORY_CREATE -> createCategoryFromSync(storeId, deviceId, item, syncedAt);
-            case CATEGORY_UPDATE -> updateCategoryFromSync(storeId, deviceId, item, syncedAt);
-            case CATEGORY_DEACTIVATE -> deactivateCategoryFromSync(storeId, deviceId, item, syncedAt);
-            case PRODUCT_CREATE -> createProductFromSync(storeId, deviceId, item, syncedAt);
-            case PRODUCT_UPDATE -> updateProductFromSync(storeId, deviceId, item, syncedAt);
-            case PRODUCT_DEACTIVATE -> deactivateProductFromSync(storeId, deviceId, item, syncedAt);
-            case STOCK_UPDATE -> updateStockFromSync(storeId, deviceId, item, syncedAt);
+            case CATEGORY_CREATE -> createCategoryFromSync(storeId, item, syncedAt);
+            case CATEGORY_UPDATE -> updateCategoryFromSync(storeId, item, syncedAt);
+            case CATEGORY_DEACTIVATE -> deactivateCategoryFromSync(storeId, item, syncedAt);
+            case PRODUCT_CREATE -> createProductFromSync(storeId, item, syncedAt);
+            case PRODUCT_UPDATE -> updateProductFromSync(storeId, item, syncedAt);
+            case PRODUCT_DEACTIVATE -> deactivateProductFromSync(storeId, item, syncedAt);
+            case STOCK_UPDATE -> updateStockFromSync(storeId, item, syncedAt);
         };
 
         return response;
@@ -199,7 +194,6 @@ public class CatalogSyncService {
 
     private SyncItemResponse handleDuplicateAfterRollback(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
@@ -211,7 +205,6 @@ public class CatalogSyncService {
 
         return handleRejectedAfterRollback(
                 storeId,
-                deviceId,
                 item,
                 syncedAt,
                 "Operation could not be synced because of a database constraint"
@@ -220,7 +213,6 @@ public class CatalogSyncService {
 
     private SyncItemResponse handleRejectedAfterRollback(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt,
             String message
@@ -229,7 +221,6 @@ public class CatalogSyncService {
 
         createLogFromItem(
                 storeId,
-                deviceId,
                 item,
                 null,
                 syncedAt,
@@ -262,34 +253,58 @@ public class CatalogSyncService {
             CatalogSyncLog existing,
             LocalDateTime syncedAt
     ) {
+        CatalogSyncLog resolvedExisting = resolveDuplicateProductCreateLog(existing);
+
         return SyncItemResponseMapper.forCatalogFromLog(
                 operationId,
-                existing,
+                resolvedExisting,
                 "DUPLICATE",
                 "Operation already processed",
                 syncedAt
         );
     }
 
+    private CatalogSyncLog resolveDuplicateProductCreateLog(CatalogSyncLog existing) {
+        if (existing.getProduct() != null || existing.getOperation() != CatalogSyncOperation.PRODUCT_CREATE) {
+            return existing;
+        }
+
+        if (existing.getCategoryId() == null || existing.getProductName() == null || existing.getProductName().isBlank()) {
+            return existing;
+        }
+
+        return productRepository
+                .findByStoreIdAndCategory_IdAndNameIgnoreCaseAndActiveTrue(
+                        existing.getStoreId(),
+                        existing.getCategoryId(),
+                        existing.getProductName().trim()
+                )
+                .map(product -> {
+                    existing.setProduct(product);
+                    existing.setStockQuantity(product.getStockQuantity());
+                    return catalogSyncLogRepository.saveAndFlush(existing);
+                })
+                .orElse(existing);
+    }
+
     private SyncItemResponse createCategoryFromSync(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
         if (item.getCategoryId() == null) {
-            return rejectItem(storeId, deviceId, item, syncedAt, "Category id is required to create category");
+            return rejectItem(storeId, item, syncedAt, "Category id is required to create category");
         }
 
         if (item.getName() == null || item.getName().isBlank()) {
-            return rejectItem(storeId, deviceId, item, syncedAt, "Category name is required");
+            return rejectItem(storeId, item, syncedAt, "Category name is required");
         }
 
         String categoryName = item.getName().trim();
 
         if (productCategoryRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(storeId, categoryName)) {
             return logAndReturn(
-                    storeId, deviceId, item, null, syncedAt,
+                    storeId, item, null, syncedAt,
                     "DUPLICATE", "Category already exists for this store",
                     buildCatalogItemResponse(
                             item,
@@ -317,7 +332,7 @@ public class CatalogSyncService {
         productCategoryRepository.save(category);
 
         return logAndReturn(
-                storeId, deviceId, item, null, syncedAt,
+                storeId, item, null, syncedAt,
                 "APPLIED", "Category created successfully",
                 buildCatalogItemResponse(
                         item,
@@ -334,7 +349,6 @@ public class CatalogSyncService {
 
     private SyncItemResponse updateCategoryFromSync(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
@@ -352,7 +366,7 @@ public class CatalogSyncService {
         productCategoryRepository.save(category);
 
         return logAndReturn(
-                storeId, deviceId, item, null, syncedAt,
+                storeId, item, null, syncedAt,
                 "APPLIED", "Category updated successfully",
                 buildCatalogItemResponse(
                         item,
@@ -369,7 +383,6 @@ public class CatalogSyncService {
 
     private SyncItemResponse deactivateCategoryFromSync(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
@@ -380,7 +393,7 @@ public class CatalogSyncService {
 
         if (!activeProducts.isEmpty()) {
             return logAndReturn(
-                    storeId, deviceId, item, null, syncedAt,
+                    storeId, item, null, syncedAt,
                     "REJECTED", "Cannot deactivate category with active products",
                     buildCatalogItemResponse(
                             item,
@@ -400,7 +413,7 @@ public class CatalogSyncService {
         productCategoryRepository.save(category);
 
         return logAndReturn(
-                storeId, deviceId, item, null, syncedAt,
+                storeId, item, null, syncedAt,
                 "APPLIED", "Category deactivated successfully",
                 buildCatalogItemResponse(
                         item,
@@ -417,20 +430,19 @@ public class CatalogSyncService {
 
     private SyncItemResponse createProductFromSync(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
         String validationError = validateCreateProductItem(item);
         if (validationError != null) {
-            return rejectItem(storeId, deviceId, item, syncedAt, validationError);
+            return rejectItem(storeId, item, syncedAt, validationError);
         }
 
         ProductCategory category = findCategoryForStore(item.getCategoryId(), storeId);
 
         if (productRepository.existsByStoreIdAndNameIgnoreCaseAndActiveTrue(storeId, item.getName())) {
             return logAndReturn(
-                    storeId, deviceId, item, null, syncedAt,
+                    storeId, item, null, syncedAt,
                     "REJECTED", "Product already exists for this store",
                     buildCatalogItemResponse(
                             item,
@@ -458,19 +470,19 @@ public class CatalogSyncService {
                 .updatedAt(syncedAt)
                 .build();
 
-        productRepository.save(product);
+        Product savedProduct = productRepository.saveAndFlush(product);
 
         return logAndReturn(
-                storeId, deviceId, item, product, syncedAt,
+                storeId, item, savedProduct, syncedAt,
                 "APPLIED", "Product created successfully",
                 buildCatalogItemResponse(
                         item,
-                        product.getId(),
+                        savedProduct.getId(),
                         "APPLIED",
                         "Product created successfully",
-                        product,
+                        savedProduct,
                         category,
-                        product.getStockQuantity(),
+                        savedProduct.getStockQuantity(),
                         syncedAt
                 )
         );
@@ -478,7 +490,6 @@ public class CatalogSyncService {
 
     private SyncItemResponse updateProductFromSync(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
@@ -499,7 +510,7 @@ public class CatalogSyncService {
 
         if (item.getPrice() != null) {
             if (item.getPrice().signum() <= 0) {
-                return rejectItem(storeId, deviceId, item, syncedAt, "Price must be greater than zero");
+                return rejectItem(storeId, item, syncedAt, "Price must be greater than zero");
             }
 
             product.setPrice(item.getPrice());
@@ -507,7 +518,7 @@ public class CatalogSyncService {
 
         if (item.getStockQuantity() != null) {
             if (item.getStockQuantity() < 0) {
-                return rejectItem(storeId, deviceId, item, syncedAt, "Stock quantity cannot be negative");
+                return rejectItem(storeId, item, syncedAt, "Stock quantity cannot be negative");
             }
 
             product.setStockQuantity(item.getStockQuantity());
@@ -517,7 +528,7 @@ public class CatalogSyncService {
         productRepository.save(product);
 
         return logAndReturn(
-                storeId, deviceId, item, product, syncedAt,
+                storeId, item, product, syncedAt,
                 "APPLIED", "Product updated successfully",
                 buildCatalogItemResponse(
                         item,
@@ -534,7 +545,6 @@ public class CatalogSyncService {
 
     private SyncItemResponse deactivateProductFromSync(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
@@ -545,7 +555,7 @@ public class CatalogSyncService {
         productRepository.save(product);
 
         return logAndReturn(
-                storeId, deviceId, item, product, syncedAt,
+                storeId, item, product, syncedAt,
                 "APPLIED", "Product deactivated successfully",
                 buildCatalogItemResponse(
                         item,
@@ -562,18 +572,17 @@ public class CatalogSyncService {
 
     private SyncItemResponse updateStockFromSync(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt
     ) {
         Product product = findProductForStore(item.getProductId(), storeId);
 
         if (!Boolean.TRUE.equals(product.getActive())) {
-            return rejectItem(storeId, deviceId, item, syncedAt, "Product is inactive");
+            return rejectItem(storeId, item, syncedAt, "Product is inactive");
         }
 
         if (item.getQuantityDelta() == null) {
-            return rejectItem(storeId, deviceId, item, syncedAt, "Quantity delta is required for stock update");
+            return rejectItem(storeId, item, syncedAt, "Quantity delta is required for stock update");
         }
 
         int currentStock = product.getStockQuantity();
@@ -581,7 +590,7 @@ public class CatalogSyncService {
 
         if (newStock < 0) {
             return logAndReturn(
-                    storeId, deviceId, item, product, syncedAt,
+                    storeId, item, product, syncedAt,
                     "REJECTED", "Stock quantity cannot be negative",
                     buildCatalogItemResponse(
                             item,
@@ -601,7 +610,7 @@ public class CatalogSyncService {
         productRepository.save(product);
 
         return logAndReturn(
-                storeId, deviceId, item, product, syncedAt,
+                storeId, item, product, syncedAt,
                 "APPLIED", "Stock updated successfully",
                 buildCatalogItemResponse(
                         item,
@@ -618,13 +627,12 @@ public class CatalogSyncService {
 
     private SyncItemResponse rejectItem(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             LocalDateTime syncedAt,
             String message
     ) {
         return logAndReturn(
-                storeId, deviceId, item, null, syncedAt,
+                storeId, item, null, syncedAt,
                 "REJECTED", message,
                 buildCatalogItemResponse(
                         item,
@@ -641,7 +649,6 @@ public class CatalogSyncService {
 
     private SyncItemResponse logAndReturn(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             Product product,
             LocalDateTime syncedAt,
@@ -649,7 +656,7 @@ public class CatalogSyncService {
             String message,
             SyncItemResponse response
     ) {
-        createLogFromItem(storeId, deviceId, item, product, syncedAt, status, message);
+        createLogFromItem(storeId, item, product, syncedAt, status, message);
         return response;
     }
 
@@ -709,7 +716,6 @@ public class CatalogSyncService {
 
     private void createLogFromItem(
             UUID storeId,
-            String deviceId,
             CatalogSyncItemRequest item,
             Product product,
             LocalDateTime syncedAt,
@@ -718,7 +724,6 @@ public class CatalogSyncService {
     ) {
         createLog(
                 storeId,
-                deviceId,
                 item != null ? item.getOperationId() : null,
                 item,
                 product,
@@ -730,7 +735,6 @@ public class CatalogSyncService {
 
     private void createLog(
             UUID storeId,
-            String deviceId,
             String operationId,
             CatalogSyncItemRequest item,
             Product product,
@@ -741,7 +745,6 @@ public class CatalogSyncService {
         CatalogSyncLog log = CatalogSyncLog.builder()
                 .storeId(storeId)
                 .product(product)
-                .deviceId(deviceId)
                 .operationId(operationId)
                 .operation(item != null ? item.getOperation() : null)
                 .quantityDelta(item != null ? item.getQuantityDelta() : null)

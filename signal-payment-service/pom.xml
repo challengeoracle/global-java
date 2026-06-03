@@ -11,7 +11,7 @@
 	<groupId>br.com.signal</groupId>
 	<artifactId>signal-payment-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>signal-sales-service</name>
+	<name>signal-payment-service</name>
 	<description>Payment service for OffPay</description>
 	<url/>
 	<licenses>

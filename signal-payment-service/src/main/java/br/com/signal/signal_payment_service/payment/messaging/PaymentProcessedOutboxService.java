@@ -37,7 +37,11 @@ public class PaymentProcessedOutboxService {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    paymentProcessedOutboxDispatcher.dispatchSingle(outbox.getId());
+                    try {
+                        paymentProcessedOutboxDispatcher.dispatchSingle(outbox.getId());
+                    } catch (RuntimeException ex) {
+                        log.warn("Immediate PaymentProcessedEvent dispatch failed for order {}. Scheduled retry will handle it.", outbox.getOrderId(), ex);
+                    }
                 }
             });
         } else {

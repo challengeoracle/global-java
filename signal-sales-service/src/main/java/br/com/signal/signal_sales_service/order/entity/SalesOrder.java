@@ -38,9 +38,6 @@ public class SalesOrder {
     @Column(name = "SELLER_ID")
     private UUID sellerId;
 
-    @Column(name = "DEVICE_ID", length = 150)
-    private String deviceId;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "ORDER_STATUS", nullable = false, length = 40)
     private OrderStatus orderStatus;

@@ -38,8 +38,10 @@ public class InsightRuntimeTools {
         return analyticsSummaryService.getMySummary(authorization);
     }
 
-    @Tool(description = "Retorna um resumo detalhado de vendedor ou cliente conforme o papel do usuario autenticado.")
-    public Object getRoleSpecificSummary() {
+    @Tool(description = "Retorna um resumo detalhado de vendedor ou cliente conforme o papel do usuario autenticado. Opcionalmente, o modelo pode enviar um texto curto de contexto adicional, que sera ignorado se vier vazio.")
+    public Object getRoleSpecificSummary(
+            @ToolParam(description = "Contexto adicional opcional sobre o usuario atual. Pode ser omitido.") String context
+    ) {
         if (authUser.isSeller()) {
             SellerSummaryResponse summary = analyticsSummaryService.getSellerSummary(authorization);
             List<TopProductResponse> topProducts = analyticsSummaryService.getSellerTopProducts(authorization);

@@ -5,13 +5,11 @@ import br.com.signal.signal_auth_service.dto.LoginRequest;
 import br.com.signal.signal_auth_service.dto.RegisterCustomerRequest;
 import br.com.signal.signal_auth_service.dto.RegisterSellerRequest;
 import br.com.signal.signal_auth_service.dto.UserResponse;
-import br.com.signal.signal_auth_service.entity.Device;
 import br.com.signal.signal_auth_service.entity.Store;
 import br.com.signal.signal_auth_service.entity.User;
 import br.com.signal.signal_auth_service.entity.UserRole;
 import br.com.signal.signal_auth_service.exception.BadRequestException;
 import br.com.signal.signal_auth_service.exception.UnauthorizedException;
-import br.com.signal.signal_auth_service.repository.DeviceRepository;
 import br.com.signal.signal_auth_service.repository.StoreRepository;
 import br.com.signal.signal_auth_service.repository.UserRepository;
 import br.com.signal.signal_auth_service.security.JwtService;
@@ -28,7 +26,6 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
-    private final DeviceRepository deviceRepository;
 
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -37,8 +34,7 @@ public class AuthService {
 
         validateSellerCreation(
                 request.getEmail(),
-                request.getCpf(),
-                normalizeDeviceId(request.getDeviceId())
+                request.getCpf()
         );
 
         User user = User.builder()
@@ -62,30 +58,13 @@ public class AuthService {
 
         storeRepository.save(store);
 
-        Optional<Device> device = Optional.empty();
-        String deviceId = normalizeDeviceId(request.getDeviceId());
-
-        if (deviceId != null) {
-            Device registeredDevice = Device.builder()
-                    .deviceId(deviceId)
-                    .offlineToken(null)
-                    .offlineExpiresAt(null)
-                    .active(true)
-                    .user(user)
-                    .build();
-
-            deviceRepository.save(registeredDevice);
-            device = Optional.of(registeredDevice);
-        }
-
         String token = jwtService.generateToken(user);
 
         return AuthResponse.builder()
                 .token(token)
                 .user(buildUserResponse(
                         user,
-                        Optional.of(store),
-                        device
+                        Optional.of(store)
                 ))
                 .build();
     }
@@ -115,7 +94,6 @@ public class AuthService {
                 .token(token)
                 .user(buildUserResponse(
                         user,
-                        Optional.empty(),
                         Optional.empty()
                 ))
                 .build();
@@ -138,11 +116,9 @@ public class AuthService {
         }
 
         Optional<Store> store = Optional.empty();
-        Optional<Device> device = Optional.empty();
 
         if (user.getRole() == UserRole.SELLER) {
             store = storeRepository.findBySeller_Id(user.getId());
-            device = deviceRepository.findByUser_Id(user.getId());
         }
 
         String token = jwtService.generateToken(user);
@@ -151,8 +127,7 @@ public class AuthService {
                 .token(token)
                 .user(buildUserResponse(
                         user,
-                        store,
-                        device
+                        store
                 ))
                 .build();
     }
@@ -165,17 +140,14 @@ public class AuthService {
                 );
 
         Optional<Store> store = Optional.empty();
-        Optional<Device> device = Optional.empty();
 
         if (user.getRole() == UserRole.SELLER) {
             store = storeRepository.findBySeller_Id(user.getId());
-            device = deviceRepository.findByUser_Id(user.getId());
         }
 
         return buildUserResponse(
                 user,
-                store,
-                device
+                store
         );
     }
 
@@ -195,32 +167,18 @@ public class AuthService {
 
     private void validateSellerCreation(
             String email,
-            String cpf,
-            String deviceId
+            String cpf
     ) {
 
         validateUserCreation(
                 email,
                 cpf
         );
-
-        if (deviceId != null && deviceRepository.existsByDeviceId(deviceId)) {
-            throw new BadRequestException("Device already registered");
-        }
-    }
-
-    private String normalizeDeviceId(String deviceId) {
-        if (deviceId == null || deviceId.isBlank()) {
-            return null;
-        }
-
-        return deviceId.trim();
     }
 
     private UserResponse buildUserResponse(
             User user,
-            Optional<Store> store,
-            Optional<Device> device
+            Optional<Store> store
     ) {
 
         return UserResponse.builder()
@@ -232,7 +190,6 @@ public class AuthService {
                 .role(user.getRole().name())
                 .storeId(store.map(Store::getId).orElse(null))
                 .storeName(store.map(Store::getName).orElse(null))
-                .deviceId(device.map(Device::getDeviceId).orElse(null))
                 .build();
     }
 }

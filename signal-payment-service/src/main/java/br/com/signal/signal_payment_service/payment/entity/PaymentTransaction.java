@@ -58,6 +58,12 @@ public class PaymentTransaction {
     @Column(name = "GATEWAY_REFERENCE", length = 100)
     private String gatewayReference;
 
+    @Column(name = "CREDIT_DEBT_AMOUNT", nullable = false, precision = 15, scale = 2)
+    private BigDecimal creditDebtAmount;
+
+    @Column(name = "CREDIT_DEBT_SETTLED_AT")
+    private LocalDateTime creditDebtSettledAt;
+
     @Column(name = "CREATED_AT", nullable = false)
     private LocalDateTime createdAt;
 
@@ -72,6 +78,10 @@ public class PaymentTransaction {
 
         if (status == null) {
             status = PaymentTransactionStatus.PENDING;
+        }
+
+        if (creditDebtAmount == null) {
+            creditDebtAmount = BigDecimal.ZERO;
         }
     }
 }

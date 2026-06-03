@@ -1,6 +1,6 @@
 # SIGNAL Auth Service
 
-Serviço de **identidade** do SIGNAL: login, JWT, perfil do usuário e papéis (`CUSTOMER` / `SELLER`).
+Servico de identidade do OffPay. Ele cuida de cadastro, login, JWT e perfil autenticado de vendedor e cliente.
 
 A API roda localmente em:
 
@@ -20,133 +20,55 @@ http://localhost:8081/swagger-ui.html
 
 O `signal-auth-service` responde por:
 
-| Função | Endpoint |
+| Funcao | Endpoint |
 |--------|----------|
 | Cadastro de vendedor | `POST /auth/register/seller` |
 | Cadastro de cliente | `POST /auth/register/customer` |
-| Login + JWT | `POST /auth/login` |
+| Login | `POST /auth/login` |
 | Perfil autenticado | `GET /auth/me` |
-
-O auth **não** processa vendas, catálogo ou pagamentos.  
-O `signal-sales-service` consome apenas `GET /auth/me` (JWT) para identificar vendedor, `storeId` e `deviceId` opcional.
-
----
-
-## Modelo de identidade
-
-### JWT
-
-Claims: `subject` (email), `role`, `userId`.  
-Expiração configurável via `jwt.expiration-minutes` (padrão: 120 min).
-
-### Papéis
-
-- `SELLER` — vendedor com loja (`storeId`, `storeName`)
-- `CUSTOMER` — cliente final
-
-### deviceId (opcional)
-
-- Pode ser informado no cadastro do vendedor ou depois via `PATCH /device/me` (legado)
-- Retornado em `/auth/me` quando registrado; `null` caso contrário
-- O sales-service recebe `deviceId` no body do sync para **rastreio**, sem exigir ativação offline
+| Ativar sessao offline legada do cliente | `POST /customer/offline/activate` |
+| Consultar sessao offline legada do cliente | `GET /customer/offline/me` |
 
 ---
 
-## Endpoints principais
+## Papel no fluxo
 
-### Cadastro de vendedor
+O `auth-service` e a porta de entrada da operacao:
 
-```
-POST /auth/register/seller
-```
+- cria vendedor e cliente
+- entrega JWT para os outros servicos
+- informa `role`, `storeId` e `storeName`
 
-```json
-{
-  "name": "Mateus Lima",
-  "email": "mateus.seller@email.com",
-  "password": "123456",
-  "cpf": "12345678901",
-  "phone": "11999999999",
-  "storeName": "Mercado Signal",
-  "storeCategory": "Mercado",
-  "deviceId": "device-seller-001"
-}
-```
-
-`deviceId` é **opcional**. Sem ele, o vendedor é criado normalmente; o device pode ser registrado depois.
-
-### Cadastro de cliente
-
-```
-POST /auth/register/customer
-```
-
-### Login
-
-```
-POST /auth/login
-```
-
-Retorna JWT + perfil. **Não** retorna token offline.
-
-### Perfil autenticado
-
-```
-GET /auth/me
-Authorization: Bearer <JWT>
-```
-
-Resposta para vendedor:
-
-```json
-{
-  "id": "...",
-  "name": "Mateus Lima",
-  "email": "mateus.seller@email.com",
-  "role": "SELLER",
-  "storeId": "...",
-  "storeName": "Mercado Signal",
-  "deviceId": "device-seller-001"
-}
-```
-
-Para cliente, `storeId` e `deviceId` vêm `null`.
+O `sales-service`, `payment-service` e `analytics-ai-service` usam esse contexto para identificar quem esta fazendo a operacao.
 
 ---
 
-## Integração com Sales
+## JWT e perfis
 
-O sales-service chama `GET /auth/me` com o JWT do vendedor:
+Perfis usados hoje:
 
-- Valida papel `SELLER`
-- Usa `storeId` para associar pedidos
-- `deviceId` do sync vem no body (`OrderSyncRequest.deviceId`) — rastreio, não bloqueio
+- `SELLER`
+- `CUSTOMER`
 
-**Não é necessário** chamar `/device/offline/activate` antes de sincronizar pedidos.
+O `GET /auth/me` devolve o contexto autenticado que o app usa para continuar o fluxo.
 
----
-
-## Endpoints legados (offline)
-
-Mantidos por compatibilidade. Tabelas `TB_DEVICES` e `TB_CUSTOMER_OFFLINE_SESSIONS` **não foram removidas**.
-
-| Endpoint | Descrição |
-|----------|-----------|
-| `GET /device/me` | Status do device + token offline (legado) |
-| `POST /device/offline/activate` | Gera `offlineToken` do vendedor (legado) |
-| `PATCH /device/me` | Registra/atualiza `deviceId` |
-| `POST /customer/offline/activate` | Gera `sessionToken` do cliente (legado) |
-| `GET /customer/offline/me` | Status da sessão offline do cliente (legado) |
-
-Esses endpoints **não bloqueiam** operações no sales-service.
+No vendedor, a resposta inclui a loja vinculada. O fluxo offline-first nao depende de device.
 
 ---
 
-## Segurança
+## Endpoints legados de offline do cliente
 
-**Públicas:**
+Os endpoints de `/customer/offline/**` continuam no servico por compatibilidade.
 
-```
+Hoje eles nao sao pre-requisito para o fluxo principal offline-first do app, mas seguem disponiveis no projeto.
+
+---
+
+## Seguranca
+
+Publicos:
+
+```text
 POST /auth/register/seller
 POST /auth/register/customer
 POST /auth/login
@@ -154,39 +76,23 @@ POST /auth/login
 /v3/api-docs
 ```
 
-**Autenticadas (JWT):**
+Autenticados:
 
-```
+```text
 GET /auth/me
-```
-
-**Por papel (legado):**
-
-```
-SELLER   → /device/**
-CUSTOMER → /customer/offline/**
+POST /customer/offline/activate
+GET /customer/offline/me
 ```
 
 ---
 
-## Configuração
+## Configuracao
 
 ```yaml
-jwt:
-  secret: ${JWT_SECRET}
-  expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
-
-offline:
-  session-expiration-hours: 24   # usado apenas pelos endpoints legados
+server.port=8081
+DB_URL=
+DB_USERNAME=
+DB_PASSWORD=
+JWT_SECRET=
+JWT_EXPIRATION_MINUTES=120
 ```
-
----
-
-## Fluxo recomendado (mobile)
-
-1. `POST /auth/register/seller` ou `/auth/login`
-2. Guardar JWT
-3. `GET /auth/me` → obter `storeId`, `role`, `deviceId` (se houver)
-4. Sync de pedidos no sales com JWT + `deviceId` no body
-
-Sem necessidade de ativação offline.

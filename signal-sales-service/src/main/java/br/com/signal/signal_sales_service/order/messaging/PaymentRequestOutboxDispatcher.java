@@ -13,6 +13,7 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -31,6 +32,7 @@ public class PaymentRequestOutboxDispatcher {
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
 
+    @Transactional
     @Scheduled(initialDelay = 15000, fixedDelay = 15000)
     public void retryPendingEvents() {
         for (UUID pendingId : outboxRepository.findRetryable(LocalDateTime.now()).stream().map(PaymentEventOutbox::getId).toList()) {
@@ -38,7 +40,7 @@ public class PaymentRequestOutboxDispatcher {
         }
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void dispatchSingle(UUID outboxId) {
         outboxRepository.findByIdForUpdate(outboxId).ifPresent(outbox -> {
             if (outbox.getStatus() == PaymentEventOutboxStatus.SENT) {

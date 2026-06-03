@@ -26,7 +26,6 @@ public final class OrderMapper {
                 .storeId(order.getStoreId())
                 .customerId(order.getCustomerId())
                 .sellerId(order.getSellerId())
-                .deviceId(order.getDeviceId())
                 .orderStatus(order.getOrderStatus() == null ? null : order.getOrderStatus().name())
                 .paymentStatus(order.getPaymentStatus() == null ? null : order.getPaymentStatus().name())
                 .syncStatus(order.getSyncStatus() == null ? null : order.getSyncStatus().name())
