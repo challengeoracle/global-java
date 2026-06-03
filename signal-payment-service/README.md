@@ -1,6 +1,6 @@
 # SIGNAL Payment Service
 
-Servico financeiro do OffPay. Ele processa pagamentos, controla carteira e devolve o status financeiro para o restante da operacao.
+Serviço financeiro do OffPay. Ele processa pagamentos, controla carteira e devolve o status financeiro para o restante da operação.
 
 A API roda localmente em:
 
@@ -20,25 +20,25 @@ http://localhost:8083/swagger-ui.html
 
 O `signal-payment-service` responde por:
 
-| Funcao | Endpoint |
+| Função | Endpoint |
 |--------|----------|
 | Minha carteira principal | `GET /wallet/me` |
 | Minha carteira pessoal | `GET /wallet/personal/me` |
 | Depositar saldo | `POST /wallet/deposit` |
 | Liquidar saldo pendente da loja | `POST /wallet/settle` |
-| Minhas movimentacoes da carteira | `GET /wallet/transactions/me` |
-| Minhas movimentacoes da carteira paginado | `GET /wallet/transactions/me/page` |
-| Minhas movimentacoes pessoais | `GET /wallet/transactions/personal/me` |
-| Minhas movimentacoes pessoais paginado | `GET /wallet/transactions/personal/me/page` |
-| Minhas transacoes de pagamento | `GET /payment/transactions/me` |
-| Minhas transacoes de pagamento paginado | `GET /payment/transactions/me/page` |
-| Transacao por pedido | `GET /payment/transactions/order/{orderId}` |
+| Minhas movimentações da carteira | `GET /wallet/transactions/me` |
+| Minhas movimentações da carteira paginado | `GET /wallet/transactions/me/page` |
+| Minhas movimentações pessoais | `GET /wallet/transactions/personal/me` |
+| Minhas movimentações pessoais paginado | `GET /wallet/transactions/personal/me/page` |
+| Minhas transações de pagamento | `GET /payment/transactions/me` |
+| Minhas transações de pagamento paginado | `GET /payment/transactions/me/page` |
+| Transação por pedido | `GET /payment/transactions/order/{orderId}` |
 
 ---
 
 ## Papel no fluxo
 
-O `payment-service` so fecha a parte financeira quando a operacao chega aos servicos centrais.
+O `payment-service` só fecha a parte financeira quando a operação chega aos serviços centrais.
 
 Ele faz isto:
 
@@ -48,24 +48,24 @@ Ele faz isto:
 - credita `pendingBalance` para a loja
 - publica o resultado para o `sales-service`
 
-No fluxo offline-first, isso significa que pagamento confirmado sempre depende da sincronizacao e da validacao online.
+No fluxo offline-first, isso significa que pagamento confirmado sempre depende da sincronização e da validação online.
 
 ---
 
-## Integracao com Sales
+## Integração com Sales
 
-O servico participa destes passos:
+O serviço participa destes passos:
 
 1. recebe `PaymentRequested`
-2. processa a transacao
-3. grava pagamento e movimentacoes de carteira
+2. processa a transação
+3. grava pagamento e movimentações de carteira
 4. publica `PaymentProcessed`
 
-Se houver falha temporaria de mensageria, os eventos ficam em outbox para reenvio.
+Se houver falha temporária de mensageria, os eventos ficam em outbox para reenvio.
 
 ---
 
-## Seguranca
+## Segurança
 
 Autenticados:
 
@@ -74,7 +74,7 @@ Autenticados:
 /payment/transactions/**
 ```
 
-Publicos:
+Públicos:
 
 ```text
 /swagger-ui.html
@@ -83,7 +83,7 @@ Publicos:
 
 ---
 
-## Configuracao
+## Configuração
 
 ```yaml
 server.port=8083
@@ -97,3 +97,23 @@ RABBITMQ_PORT=5672
 RABBITMQ_USERNAME=guest
 RABBITMQ_PASSWORD=guest
 ```
+
+## Docker
+
+Este serviço faz parte do `docker-compose` da raiz e sobe com:
+
+```powershell
+docker compose up -d --build signal-payment-service
+```
+
+Variáveis esperadas no ambiente:
+
+- `DB_URL`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `JWT_SECRET`
+- `AUTH_SERVICE_URL`
+- `RABBITMQ_HOST`
+- `RABBITMQ_PORT`
+- `RABBITMQ_USERNAME`
+- `RABBITMQ_PASSWORD`

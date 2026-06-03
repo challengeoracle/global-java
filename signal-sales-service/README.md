@@ -1,6 +1,6 @@
 # SIGNAL Sales Service
 
-Servico de catalogo e pedidos do OffPay. Ele cuida do que o vendedor vende e do que precisa ser sincronizado quando a internet volta.
+Serviço de catálogo e pedidos do OffPay. Ele cuida do que o vendedor vende e do que precisa ser sincronizado quando a internet volta.
 
 A API roda localmente em:
 
@@ -20,11 +20,11 @@ http://localhost:8082/swagger-ui.html
 
 O `signal-sales-service` responde por:
 
-| Funcao | Endpoint |
+| Função | Endpoint |
 |--------|----------|
-| Catalogo do vendedor autenticado | `GET /catalog/me` |
-| Catalogo publico por loja | `GET /catalog/store/{storeId}` |
-| Sync de catalogo offline | `POST /catalog/sync` |
+| Catálogo do vendedor autenticado | `GET /catalog/me` |
+| Catálogo público por loja | `GET /catalog/store/{storeId}` |
+| Sync de catálogo offline | `POST /catalog/sync` |
 | Criar categoria | `POST /category` |
 | Listar minhas categorias | `GET /category/me` |
 | Buscar categoria | `GET /category/{id}` |
@@ -58,10 +58,10 @@ O `signal-sales-service` responde por:
 
 ## Papel no fluxo
 
-O `sales-service` e o centro da operacao comercial:
+O `sales-service` é o centro da operação comercial:
 
-- guarda o catalogo da loja
-- aceita alteracoes criadas offline no app
+- guarda o catálogo da loja
+- aceita alterações criadas offline no app
 - recebe pedidos criados online
 - sincroniza pedidos confirmados localmente
 - publica eventos para o fluxo de pagamento
@@ -70,11 +70,11 @@ Quando vendedor e cliente ficam sem internet, o mobile salva tudo localmente e d
 
 ---
 
-## Integracao com Auth e Payment
+## Integração com Auth e Payment
 
-O servico usa o JWT do `auth-service` para identificar vendedor ou cliente.
+O serviço usa o JWT do `auth-service` para identificar vendedor ou cliente.
 
-Tambem conversa com o `payment-service` por mensageria:
+Também conversa com o `payment-service` por mensageria:
 
 - publica `PaymentRequested`
 - recebe retorno de pagamento processado
@@ -82,11 +82,11 @@ Tambem conversa com o `payment-service` por mensageria:
 
 ---
 
-## Seguranca
+## Segurança
 
-Publicos:
+Públicos:
 
-```
+```text
 GET /catalog/store/{storeId}
 GET /product
 GET /product/page
@@ -113,7 +113,7 @@ Autenticados:
 
 ---
 
-## Configuracao
+## Configuração
 
 ```yaml
 server.port=8082
@@ -127,3 +127,23 @@ RABBITMQ_PORT=5672
 RABBITMQ_USERNAME=guest
 RABBITMQ_PASSWORD=guest
 ```
+
+## Docker
+
+Este serviço faz parte do `docker-compose` da raiz e sobe com:
+
+```powershell
+docker compose up -d --build signal-sales-service
+```
+
+Variáveis esperadas no ambiente:
+
+- `DB_URL`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `JWT_SECRET`
+- `AUTH_SERVICE_URL`
+- `RABBITMQ_HOST`
+- `RABBITMQ_PORT`
+- `RABBITMQ_USERNAME`
+- `RABBITMQ_PASSWORD`

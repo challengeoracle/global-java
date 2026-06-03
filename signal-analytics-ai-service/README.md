@@ -1,6 +1,6 @@
 # SIGNAL Analytics AI Service
 
-Servico de analytics e insights do OffPay. Ele junta dados de pedidos, pagamentos e carteira para mostrar resumos e responder perguntas no app.
+Serviço de analytics e insights do OffPay. Ele junta dados de pedidos, pagamentos e carteira para mostrar resumos e responder perguntas no app.
 
 A API roda localmente em:
 
@@ -20,9 +20,9 @@ http://localhost:8084/swagger-ui.html
 
 O `signal-analytics-ai-service` responde por:
 
-| Funcao | Endpoint |
+| Função | Endpoint |
 |--------|----------|
-| Resumo geral do usuario | `GET /analytics/me/summary` |
+| Resumo geral do usuário | `GET /analytics/me/summary` |
 | Resumo do vendedor | `GET /analytics/seller/summary` |
 | Resumo do cliente | `GET /analytics/customer/summary` |
 | Produtos mais vendidos da loja | `GET /analytics/seller/top-products` |
@@ -33,7 +33,7 @@ O `signal-analytics-ai-service` responde por:
 
 ## Papel no fluxo
 
-Esse servico nao cria pedido nem processa pagamento. Ele fica por cima da operacao para:
+Esse serviço não cria pedido nem processa pagamento. Ele fica por cima da operação para:
 
 - consolidar indicadores do vendedor e do cliente
 - mostrar saldo, pedidos pagos, rejeitados e pendentes
@@ -48,27 +48,27 @@ O endpoint de IA usa:
 
 ---
 
-## Integracao com os outros servicos
+## Integração com os outros serviços
 
 O `analytics-ai-service` consome:
 
-- `auth-service` para identificar o usuario autenticado
-- `sales-service` para pedidos, vendas e catalogo
-- `payment-service` para carteira e transacoes
+- `auth-service` para identificar o usuário autenticado
+- `sales-service` para pedidos, vendas e catálogo
+- `payment-service` para carteira e transações
 
-Ele nao exige outro deploy separado alem dele mesmo.
+Ele não exige outro deploy separado além dele mesmo.
 
 ---
 
 ## MCP e Insights
 
-O servico tambem expõe recursos de MCP no mesmo processo. Isso serve para o modulo de insights consultar regras operacionais e documentos internos do OffPay sem depender de outro servico.
+O serviço também expõe recursos de MCP no mesmo processo. Isso serve para o módulo de insights consultar regras operacionais e documentos internos do OffPay sem depender de outro serviço.
 
 Os endpoints principais do app continuam sendo os de `analytics` e `ai/insights`.
 
 ---
 
-## Seguranca
+## Segurança
 
 Autenticados:
 
@@ -77,7 +77,7 @@ Autenticados:
 /ai/insights/ask
 ```
 
-Publicos:
+Públicos:
 
 ```text
 /swagger-ui.html
@@ -86,7 +86,7 @@ Publicos:
 
 ---
 
-## Configuracao
+## Configuração
 
 ```yaml
 server.port=8084
@@ -98,3 +98,24 @@ GROQ_API_KEY=
 GROQ_BASE_URL=https://api.groq.com/openai/v1
 GROQ_MODEL=llama-3.1-8b-instant
 ```
+
+## Docker
+
+Este serviço faz parte do `docker-compose` da raiz e sobe com:
+
+```powershell
+docker compose up -d --build signal-analytics-ai-service
+```
+
+Variáveis esperadas no ambiente:
+
+- `DB_URL`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `JWT_SECRET`
+- `AUTH_SERVICE_URL`
+- `SALES_SERVICE_URL`
+- `PAYMENT_SERVICE_URL`
+- `GROQ_API_KEY`
+- `GROQ_BASE_URL`
+- `GROQ_MODEL`
