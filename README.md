@@ -42,6 +42,40 @@ Infraestrutura local utilizada:
 | RabbitMQ Management | `15672` | painel de administração |
 | Oracle externo | configurado em `DB_URL` | persistência de dados |
 
+## Justificativa da arquitetura de microsserviços
+
+A arquitetura de microsserviços foi adotada porque o problema do OffPay envolve domínios distintos, com responsabilidades bem separadas e necessidades diferentes de processamento.
+
+- o `signal-auth-service` concentra autenticação, identidade, Spring Security e JWT
+- o `signal-sales-service` isola a operação comercial, catálogo, pedidos e sincronização offline-first
+- o `signal-payment-service` separa a regra financeira, carteira e processamento assíncrono de pagamentos
+- o `signal-analytics-ai-service` fica responsável pela leitura de contexto, consolidação de dados e uso de Spring AI
+
+Essa divisão reduz acoplamento, facilita manutenção, melhora a clareza das responsabilidades e justifica o uso de comunicação entre serviços em uma solução com autenticação, operação comercial, pagamentos e inteligência analítica.
+
+Além disso, a arquitetura atende ao cenário da GS porque:
+
+- permite persistência relacional compartilhando o Oracle como base de dados da solução
+- utiliza mensageria com RabbitMQ em pontos que exigem rastreabilidade e processamento assíncrono
+- usa clientes HTTP com Feign para integração explícita entre APIs internas
+- separa a parte transacional da parte analítica e de IA, evitando misturar regras críticas com processamento contextual
+
+## Recursos técnicos aplicados na solução
+
+O projeto foi estruturado para atender aos requisitos técnicos da disciplina com funcionalidade real, e não apenas com operações CRUD simples.
+
+- API REST com Spring Boot em todos os microsserviços
+- persistência em banco de dados relacional Oracle
+- controle de acesso com Spring Security e tokens JWT
+- documentação com Swagger e OpenAPI
+- uso de HATEOAS em endpoints selecionados
+- uso de cache onde faz sentido para reduzir custo de leitura
+- suporte a CORS para integração com clientes externos
+- mensageria com RabbitMQ para eventos e processamento assíncrono
+- uso de Feign para comunicação entre microsserviços
+- uso de Spring AI no `signal-analytics-ai-service`, com recursos de tooling, MCP e recuperação de contexto em PDF
+- funcionalidade real voltada a operação offline-first, sincronização, carteira, pagamentos e geração de insights
+
 ## Fluxo resumido
 
 1. O usuário se autentica no `signal-auth-service`
