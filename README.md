@@ -38,9 +38,9 @@ Infraestrutura local utilizada:
 
 | Componente | Porta | Papel |
 |-----------|-------|-------|
-| Oracle Free | `1521` | persistência de dados |
 | RabbitMQ | `5672` | mensageria entre serviços |
 | RabbitMQ Management | `15672` | painel de administração |
+| Oracle externo | configurado em `DB_URL` | persistência de dados |
 
 ## Fluxo resumido
 
@@ -66,13 +66,13 @@ Este repositório deve ser executado como solução completa. O microsserviço d
 1. Clone o repositório:
 
 ```bash
-git clone https://github.com/challengeoracle/global-devops
+git clone https://github.com/challengeoracle/global-java
 ```
 
 2. Entre na pasta do projeto:
 
 ```bash
-cd global-devops
+cd global-java
 ```
 
 3. Copie o arquivo de variáveis de ambiente:
@@ -92,9 +92,15 @@ cp .env.example .env
 4. Ajuste no `.env` pelo menos estas variáveis:
 
 - `JWT_SECRET`
-- `ORACLE_PASSWORD`
-- `ORACLE_APP_PASSWORD`
+- `DB_URL`
+- `DB_USERNAME`
+- `DB_PASSWORD`
 - `GROQ_API_KEY` caso queira testar o OffPay Insights com IA
+
+Observação:
+
+- o fluxo padrão deste projeto já assume Oracle externo, como o Oracle da FIAP
+- para esse cenário, o `RABBITMQ_HOST` continua como `rabbitmq`, porque o RabbitMQ sobe em container e os microsserviços se comunicam com ele pela rede do Docker
 
 5. Suba todos os serviços na raiz do projeto:
 
@@ -136,17 +142,29 @@ docker compose logs -f
 docker compose down
 ```
 
-Para remover também o volume do banco:
+Para remover também o volume do banco local opcional:
 
 ```powershell
 docker compose down -v
 ```
 
+## Banco de dados
+
+Por padrão, o projeto está preparado para usar um Oracle externo via `DB_URL`, como o da FIAP.
+
+Se você quiser usar um Oracle local em container, o `docker compose` também suporta isso com o profile `local-db`:
+
+```powershell
+docker compose --profile local-db up -d --build
+```
+
+Nesse modo, ele sobe um Oracle Free local para testes.
+
 ## Estrutura DevOps
 
 - `docker-compose.yml`: orquestração local completa
 - `dockerfiles/`: Dockerfiles de cada microsserviço
-- `scripts/init-local-oracle.sh`: bootstrap do banco local
+- `scripts/init-local-oracle.sh`: bootstrap do banco local opcional
 - `scripts/start-local.ps1`: execução facilitada no Windows
 - `scripts/start-local.sh`: execução facilitada no Linux/macOS
 - `.env.example`: modelo centralizado de variáveis de ambiente

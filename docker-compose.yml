@@ -2,6 +2,7 @@ name: signal-local
 
 services:
   oracle-db:
+    profiles: ["local-db"]
     image: gvenzl/oracle-free:23-slim-faststart
     container_name: signal-oracle-db
     environment:
@@ -48,20 +49,19 @@ services:
       dockerfile: dockerfiles/signal-auth-service.Dockerfile
     container_name: signal-auth-service
     depends_on:
-      oracle-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
       SERVER_PORT: 8081
-      DB_URL: jdbc:oracle:thin:@//oracle-db:1521/${ORACLE_SERVICE_NAME:-FREEPDB1}
-      DB_USERNAME: SIGNAL_AUTH
-      DB_PASSWORD: ${ORACLE_APP_PASSWORD:-Signal123!}
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-2}
       DB_MIN_IDLE: ${DB_MIN_IDLE:-0}
       DB_IDLE_TIMEOUT: ${DB_IDLE_TIMEOUT:-10000}
       DB_MAX_LIFETIME: ${DB_MAX_LIFETIME:-120000}
       DB_CONNECTION_TIMEOUT: ${DB_CONNECTION_TIMEOUT:-30000}
+      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
       JWT_SECRET: ${JWT_SECRET:-change-this-jwt-secret-with-at-least-32-characters}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-120}
       RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
@@ -78,22 +78,21 @@ services:
       dockerfile: dockerfiles/signal-sales-service.Dockerfile
     container_name: signal-sales-service
     depends_on:
-      oracle-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       signal-auth-service:
         condition: service_started
     environment:
       SERVER_PORT: 8082
-      DB_URL: jdbc:oracle:thin:@//oracle-db:1521/${ORACLE_SERVICE_NAME:-FREEPDB1}
-      DB_USERNAME: SIGNAL_SALES
-      DB_PASSWORD: ${ORACLE_APP_PASSWORD:-Signal123!}
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-2}
       DB_MIN_IDLE: ${DB_MIN_IDLE:-0}
       DB_IDLE_TIMEOUT: ${DB_IDLE_TIMEOUT:-10000}
       DB_MAX_LIFETIME: ${DB_MAX_LIFETIME:-120000}
       DB_CONNECTION_TIMEOUT: ${DB_CONNECTION_TIMEOUT:-30000}
+      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
       JWT_SECRET: ${JWT_SECRET:-change-this-jwt-secret-with-at-least-32-characters}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-120}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://signal-auth-service:8081}
@@ -111,22 +110,21 @@ services:
       dockerfile: dockerfiles/signal-payment-service.Dockerfile
     container_name: signal-payment-service
     depends_on:
-      oracle-db:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       signal-auth-service:
         condition: service_started
     environment:
       SERVER_PORT: 8083
-      DB_URL: jdbc:oracle:thin:@//oracle-db:1521/${ORACLE_SERVICE_NAME:-FREEPDB1}
-      DB_USERNAME: SIGNAL_PAYMENT
-      DB_PASSWORD: ${ORACLE_APP_PASSWORD:-Signal123!}
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-2}
       DB_MIN_IDLE: ${DB_MIN_IDLE:-0}
       DB_IDLE_TIMEOUT: ${DB_IDLE_TIMEOUT:-10000}
       DB_MAX_LIFETIME: ${DB_MAX_LIFETIME:-120000}
       DB_CONNECTION_TIMEOUT: ${DB_CONNECTION_TIMEOUT:-30000}
+      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
       JWT_SECRET: ${JWT_SECRET:-change-this-jwt-secret-with-at-least-32-characters}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-120}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://signal-auth-service:8081}
@@ -144,8 +142,6 @@ services:
       dockerfile: dockerfiles/signal-analytics-ai-service.Dockerfile
     container_name: signal-analytics-ai-service
     depends_on:
-      oracle-db:
-        condition: service_healthy
       signal-auth-service:
         condition: service_started
       signal-sales-service:
@@ -154,14 +150,15 @@ services:
         condition: service_started
     environment:
       SERVER_PORT: 8084
-      DB_URL: jdbc:oracle:thin:@//oracle-db:1521/${ORACLE_SERVICE_NAME:-FREEPDB1}
-      DB_USERNAME: SIGNAL_ANALYTICS
-      DB_PASSWORD: ${ORACLE_APP_PASSWORD:-Signal123!}
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-2}
       DB_MIN_IDLE: ${DB_MIN_IDLE:-0}
       DB_IDLE_TIMEOUT: ${DB_IDLE_TIMEOUT:-10000}
       DB_MAX_LIFETIME: ${DB_MAX_LIFETIME:-120000}
       DB_CONNECTION_TIMEOUT: ${DB_CONNECTION_TIMEOUT:-30000}
+      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-true}
       JWT_SECRET: ${JWT_SECRET:-change-this-jwt-secret-with-at-least-32-characters}
       JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-120}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://signal-auth-service:8081}
