@@ -1,6 +1,6 @@
-# OFFPAY Insights
+# OFFPAY
 
-Microsserviço de IA generativa da solução OffPay, desenvolvido para a Global Solution 26/1 na trilha de Disruptive Architectures: IoT, IoB & Generative IA. Este serviço faz parte de uma arquitetura baseada em microsserviços e depende da execução do projeto completo para funcionar corretamente.
+Projeto desenvolvido para manter a operação de pequenos comércios funcionando mesmo em cenários de instabilidade de rede, com arquitetura baseada em microsserviços, mensageria e abordagem offline-first.
 
 ## Integrantes do grupo
 
@@ -8,70 +8,52 @@ Microsserviço de IA generativa da solução OffPay, desenvolvido para a Global 
 - `RM559873` – Davi Cavalcanti Jorge
 - `RM559728` – Mateus da Silveira Lima
 
-## Vídeo demonstrativo
+## Problema abordado
 
-Acesso no YouTube: `INSERIR A URL AQUI`
+Pequenos comércios perdem vendas quando a internet falha no momento do pedido, do pagamento ou da consulta ao catálogo. Em cenários de instabilidade, o vendedor fica sem acesso confiável aos pedidos, ao saldo da carteira e ao processamento do pagamento. Isso gera fila, retrabalho e risco operacional.
 
-## Objetivo do projeto
+O projeto OffPay trata esse problema com uma abordagem offline-first. A operação da loja continua mesmo sem conectividade total, registrando pedidos e pagamentos localmente, mantendo evidências para sincronização posterior e reduzindo o impacto de falhas na rede.
 
-O OffPay Insights transforma dados operacionais em análises compreensíveis para clientes e vendedores. Usando IA Generativa com Spring AI, o assistente responde perguntas em linguagem natural sobre vendas, pagamentos, carteira digital e saldo pendente.
+## Objetivos da solução
 
-Esta entrega atende à proposta da trilha de IA Generativa, com foco em uma solução funcional conectada a um problema real e integrada a software, dados, APIs, banco de dados, automação e processamento contextual de informações.
-
-## Problema
-
-Após operar offline, comerciantes precisam entender o que aconteceu: quanto venderam, quais produtos saíram, quais pagamentos foram aprovados, o que está pendente e o que foi sincronizado. O OffPay Insights entrega essas respostas de forma simples.
-
-## Como funciona
-
-A IA consulta os microsserviços existentes via Feign, recupera regras operacionais de uma base local de conhecimento em PDF e monta um contexto estruturado para gerar uma resposta em linguagem natural.
-
-A solução não utiliza RAG vetorial. Em vez disso, usa recuperação textual por trechos de PDF armazenados em banco, com busca por termos. O serviço também expõe MCP no mesmo processo, permitindo integração com ferramentas externas compatíveis com o protocolo.
-
-Fluxo principal:
-
-`Mobile -> Analytics AI Service -> Auth / Sales / Payment -> Contexto + PDF -> Spring AI -> Resposta`
+- Permitir que vendedores continuem vendendo offline
+- Sincronizar pedidos, catálogo e eventos quando a conectividade retornar
+- Registrar pagamentos com rastreabilidade e tratamento assíncrono
+- Controlar carteira financeira de clientes e lojas
+- Manter trilha operacional via outbox para integração entre serviços
+- Armazenar base de conhecimento para IA com chunks pesquisáveis
 
 ## Arquitetura da solução
 
-![Arquitetura OffPay Insights](https://media.discordapp.net/attachments/1417871654817894594/1511562961091694733/image.png?ex=6a20e835&is=6a1f96b5&hm=28a66641593ab5e0f691a1e59a5fc45654553258add1178c2d704e25daa57599&=&format=webp&quality=lossless&width=1573&height=353.png)
-
-## Dados consultados
-
-- `Auth Service`: perfil do usuário autenticado e loja vinculada
-- `Sales Service`: pedidos, compras, vendas e itens vendidos
-- `Payment Service`: carteira, saldo, saldo pendente e transações de pagamento
-- Base local de conhecimento: regras operacionais do OffPay extraídas de PDF
-
-## Exemplos de uso
-
-Vendedor:
-
-- Pergunta: `Quanto vendi hoje?`
-- Resposta: `Hoje sua loja vendeu R$ 67,42 em 22 pedidos.`
-
-Cliente:
-
-- Pergunta: `Quanto gastei esse mês?`
-- Resposta: `Você gastou R$ 420,69 em 13 pedidos.`
-
-## Papel deste repositório
-
-Este repositório contém a solução completa do projeto OffPay em arquitetura de microsserviços. Embora o foco desta entrega de IA esteja no `signal-analytics-ai-service`, o professor precisará subir o projeto inteiro para validar as integrações, o fluxo entre serviços e as respostas geradas pela IA.
-
-Serviços da solução:
+O OffPay é composto por quatro microsserviços principais:
 
 | Serviço | Porta | Papel |
 |--------|-------|-------|
 | `signal-auth-service` | `8081` | autenticação, login, JWT e identidade |
-| `signal-sales-service` | `8082` | catálogo, produtos, categorias e pedidos |
+| `signal-sales-service` | `8082` | catálogo, categorias, produtos, pedidos e sincronização |
 | `signal-payment-service` | `8083` | carteira, transações e processamento financeiro |
 | `signal-analytics-ai-service` | `8084` | analytics, insights e respostas em linguagem natural |
+
+Infraestrutura local utilizada:
+
+| Componente | Porta | Papel |
+|-----------|-------|-------|
 | Oracle Free | `1521` | persistência de dados |
 | RabbitMQ | `5672` | mensageria entre serviços |
 | RabbitMQ Management | `15672` | painel de administração |
 
-## Execução do projeto
+## Fluxo resumido
+
+1. O usuário se autentica no `signal-auth-service`
+2. O vendedor opera catálogo e pedidos no `signal-sales-service`
+3. O `signal-payment-service` processa pagamentos e carteira
+4. O `signal-analytics-ai-service` consolida informações e gera insights
+
+Quando há falha de conectividade, a aplicação mantém o registro da operação e sincroniza os dados quando a rede retorna.
+
+## Setup do projeto
+
+Este repositório deve ser executado como solução completa. O microsserviço de IA depende dos demais serviços para funcionar corretamente, então o professor e a equipe precisam subir o projeto inteiro.
 
 ### Pré-requisitos
 
@@ -112,24 +94,29 @@ cp .env.example .env
 - `JWT_SECRET`
 - `ORACLE_PASSWORD`
 - `ORACLE_APP_PASSWORD`
-- `GROQ_API_KEY`
+- `GROQ_API_KEY` caso queira testar o OffPay Insights com IA
 
-5. Na raiz do projeto, suba o ambiente completo:
+5. Suba todos os serviços na raiz do projeto:
 
 ```powershell
 docker compose up -d --build
 ```
 
-6. Aguarde a subida de todos os containers:
+6. Se preferir, use os atalhos prontos:
 
-- Oracle Free
-- RabbitMQ
-- `signal-auth-service`
-- `signal-sales-service`
-- `signal-payment-service`
-- `signal-analytics-ai-service`
+No Windows:
 
-7. Verifique os logs, se necessário:
+```powershell
+./scripts/start-local.ps1
+```
+
+No Linux/macOS:
+
+```bash
+./scripts/start-local.sh
+```
+
+7. Acompanhe a inicialização:
 
 ```powershell
 docker compose logs -f
@@ -143,7 +130,7 @@ docker compose logs -f
 - Analytics AI: `http://localhost:8084/swagger-ui.html`
 - RabbitMQ Management: `http://localhost:15672`
 
-### Encerramento do ambiente
+### Encerramento
 
 ```powershell
 docker compose down
@@ -155,41 +142,16 @@ Para remover também o volume do banco:
 docker compose down -v
 ```
 
-## Endpoints do OFFPAY Insights
-
-- `GET /analytics/me/summary` – resumo do usuário autenticado
-- `GET /analytics/me/summary/resource` – resumo com links HATEOAS
-- `GET /analytics/me/summary/period` – resumo por período
-- `GET /analytics/me/chart` – gráfico do usuário autenticado
-- `GET /analytics/seller/summary` – indicadores da loja
-- `GET /analytics/customer/summary` – consumo do cliente
-- `GET /analytics/seller/top-products` – produtos mais vendidos
-- `GET /analytics/seller/chart` – gráfico do vendedor
-- `GET /analytics/customer/spending` – histórico de gastos
-- `GET /analytics/customer/chart` – gráfico do cliente
-- `POST /ai/insights/ask` – resposta em linguagem natural
-
-## Estrutura DevOps preparada
+## Estrutura DevOps
 
 - `docker-compose.yml`: orquestração local completa
 - `dockerfiles/`: Dockerfiles de cada microsserviço
 - `scripts/init-local-oracle.sh`: bootstrap do banco local
-- `scripts/start-local.ps1`: atalho para Windows
-- `scripts/start-local.sh`: atalho para Linux/macOS
-- `.env.example`: modelo de configuração
+- `scripts/start-local.ps1`: execução facilitada no Windows
+- `scripts/start-local.sh`: execução facilitada no Linux/macOS
+- `.env.example`: modelo centralizado de variáveis de ambiente
 
-## Entrega esperada no portal
+## Documentação complementar
 
-Esta solução foi preparada para apoiar a entrega com:
-
-- documentação do projeto
-- arquitetura da solução
-- instruções de execução
-- espaço para link do vídeo demonstrativo
-- uso de Inteligência Artificial Generativa aplicada a um problema real
-
-## Próximos ajustes para entrega final
-
-- Inserir o link público do vídeo no campo indicado
-- Adicionar, se desejado, o link do repositório público final
-- Complementar com diagramas adicionais, caso o grupo queira detalhar mais a arquitetura
+- O `README` da raiz descreve o projeto OffPay como um todo
+- O `README` de [`signal-analytics-ai-service`](C:/Users/mateu/Desktop/GS-26/global-java-fresh/signal-analytics-ai-service/README.md) detalha a entrega da trilha de IA Generativa e o microsserviço OffPay Insights

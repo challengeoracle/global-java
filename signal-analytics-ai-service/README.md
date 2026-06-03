@@ -1,92 +1,84 @@
-# SIGNAL Analytics AI Service
+# OFFPAY Insights
 
-Serviço de analytics e insights do OffPay. Ele junta dados de pedidos, pagamentos e carteira para mostrar resumos e responder perguntas no app.
+Microsserviço de IA generativa da solução OffPay, desenvolvido para a Global Solution 26/1 na trilha de Disruptive Architectures: IoT, IoB & Generative IA.
 
-A API roda localmente em:
+## Integrantes do grupo
 
-```
-http://localhost:8084
-```
+- `RM561061` – Arthur Thomas Mariano de Souza
+- `RM559873` – Davi Cavalcanti Jorge
+- `RM559728` – Mateus da Silveira Lima
 
-Swagger:
+## Vídeo demonstrativo
 
-```
-http://localhost:8084/swagger-ui.html
-```
+Acesso no YouTube: `INSERIR A URL AQUI`
 
----
+## Objetivo do projeto
 
-## Responsabilidade
+O OffPay Insights transforma dados operacionais em análises compreensíveis para clientes e vendedores. Usando IA Generativa com Spring AI, o assistente responde perguntas em linguagem natural sobre vendas, pagamentos, carteira digital e saldo pendente.
 
-O `signal-analytics-ai-service` responde por:
+O projeto atende à proposta da trilha de IA Generativa ao integrar modelos generativos com APIs, banco de dados, processamento contextual e interface de consulta baseada em linguagem natural.
 
-| Função | Endpoint |
-|--------|----------|
-| Resumo geral do usuário | `GET /analytics/me/summary` |
-| Resumo do vendedor | `GET /analytics/seller/summary` |
-| Resumo do cliente | `GET /analytics/customer/summary` |
-| Produtos mais vendidos da loja | `GET /analytics/seller/top-products` |
-| Gastos do cliente | `GET /analytics/customer/spending` |
-| Perguntar ao OffPay Insights | `POST /ai/insights/ask` |
+## Problema
 
----
+Após operar offline, comerciantes precisam entender o que aconteceu: quanto venderam, quais produtos saíram, quais pagamentos foram aprovados, o que está pendente e o que foi sincronizado. O OffPay Insights entrega essas respostas de forma simples.
 
-## Papel no fluxo
+## Como funciona
 
-Esse serviço não cria pedido nem processa pagamento. Ele fica por cima da operação para:
+A IA consulta os microsserviços existentes via Feign, recupera regras operacionais de uma base local de conhecimento em PDF e monta um contexto estruturado para gerar uma resposta em linguagem natural.
 
-- consolidar indicadores do vendedor e do cliente
-- mostrar saldo, pedidos pagos, rejeitados e pendentes
-- resumir consumo e produto mais recorrente
-- responder perguntas com contexto do OffPay
+A solução não utiliza RAG vetorial. Em vez disso, usa recuperação textual por trechos de PDF armazenados em banco, com busca por termos. O serviço também expõe MCP no mesmo processo, permitindo integração com ferramentas externas compatíveis com o protocolo.
 
-O endpoint de IA usa:
+Fluxo principal:
 
-- dados reais de analytics
-- regras do runtime do projeto
-- tools do Spring AI
+`Mobile -> Analytics AI Service -> Auth / Sales / Payment -> Contexto + PDF -> Spring AI -> Resposta`
 
----
+## Arquitetura da solução
 
-## Integração com os outros serviços
+![Arquitetura OffPay Insights](https://media.discordapp.net/attachments/1417871654817894594/1511562961091694733/image.png?ex=6a20e835&is=6a1f96b5&hm=28a66641593ab5e0f691a1e59a5fc45654553258add1178c2d704e25daa57599&=&format=webp&quality=lossless&width=1573&height=353.png)
 
-O `analytics-ai-service` consome:
+## Dados consultados
 
-- `auth-service` para identificar o usuário autenticado
-- `sales-service` para pedidos, vendas e catálogo
-- `payment-service` para carteira e transações
+- `Auth Service`: perfil do usuário autenticado e loja vinculada
+- `Sales Service`: pedidos, compras, vendas e itens vendidos
+- `Payment Service`: carteira, saldo, saldo pendente e transações de pagamento
+- Base local de conhecimento: regras operacionais do OffPay extraídas de PDF
 
-Ele não exige outro deploy separado além dele mesmo.
+## Exemplos de uso
 
----
+Vendedor:
 
-## MCP e Insights
+- Pergunta: `Quanto vendi hoje?`
+- Resposta: `Hoje sua loja vendeu R$ 67,42 em 22 pedidos.`
 
-O serviço também expõe recursos de MCP no mesmo processo. Isso serve para o módulo de insights consultar regras operacionais e documentos internos do OffPay sem depender de outro serviço.
+Cliente:
 
-Os endpoints principais do app continuam sendo os de `analytics` e `ai/insights`.
+- Pergunta: `Quanto gastei esse mês?`
+- Resposta: `Você gastou R$ 420,69 em 13 pedidos.`
 
----
+## Endpoints
 
-## Segurança
+- `GET /analytics/me/summary` – resumo do usuário autenticado
+- `GET /analytics/me/summary/resource` – resumo com links HATEOAS
+- `GET /analytics/me/summary/period` – resumo por período
+- `GET /analytics/me/chart` – gráfico do usuário autenticado
+- `GET /analytics/seller/summary` – indicadores da loja
+- `GET /analytics/customer/summary` – consumo do cliente
+- `GET /analytics/seller/top-products` – produtos mais vendidos
+- `GET /analytics/seller/chart` – gráfico do vendedor
+- `GET /analytics/customer/spending` – histórico de gastos
+- `GET /analytics/customer/chart` – gráfico do cliente
+- `POST /ai/insights/ask` – resposta em linguagem natural
 
-Autenticados:
+## Execução do microsserviço
 
-```text
-/analytics/**
-/ai/insights/ask
-```
+Embora este documento foque no OffPay Insights, o microsserviço depende do ecossistema completo do OffPay. Para validação correta, é necessário subir o projeto inteiro pela raiz do repositório.
 
-Públicos:
+### URLs principais
 
-```text
-/swagger-ui.html
-/v3/api-docs
-```
+- API local: `http://localhost:8084`
+- Swagger: `http://localhost:8084/swagger-ui.html`
 
----
-
-## Configuração
+### Variáveis de ambiente relevantes
 
 ```yaml
 server.port=8084
@@ -99,23 +91,20 @@ GROQ_BASE_URL=https://api.groq.com/openai/v1
 GROQ_MODEL=llama-3.1-8b-instant
 ```
 
-## Docker
+### Subida com Docker
 
-Este serviço faz parte do `docker-compose` da raiz e sobe com:
+Na raiz do projeto:
 
 ```powershell
-docker compose up -d --build signal-analytics-ai-service
+docker compose up -d --build
 ```
 
-Variáveis esperadas no ambiente:
+## Relação com a entrega da disciplina
 
-- `DB_URL`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `JWT_SECRET`
-- `AUTH_SERVICE_URL`
-- `SALES_SERVICE_URL`
-- `PAYMENT_SERVICE_URL`
-- `GROQ_API_KEY`
-- `GROQ_BASE_URL`
-- `GROQ_MODEL`
+Esta solução demonstra:
+
+- uso de Inteligência Artificial Generativa aplicada a um problema real
+- integração entre software, dados, banco de dados e APIs
+- processamento contextual com base de conhecimento em PDF
+- arquitetura orientada a microsserviços
+- documentação e fluxo de execução para demonstração em vídeo
