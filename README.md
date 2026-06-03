@@ -128,6 +128,22 @@ No Linux/macOS:
 docker compose logs -f
 ```
 
+Ou use os atalhos:
+
+No Windows:
+
+```powershell
+./scripts/logs.ps1
+./scripts/logs.ps1 -Service signal-auth-service
+```
+
+No Linux/macOS:
+
+```bash
+./scripts/logs.sh
+./scripts/logs.sh signal-auth-service
+```
+
 8. Acesse os serviços:
 
 - Auth: `http://localhost:8081/swagger-ui.html`
@@ -167,6 +183,8 @@ Nesse modo, ele sobe um Oracle Free local para testes.
 - `scripts/init-local-oracle.sh`: bootstrap do banco local opcional
 - `scripts/start-local.ps1`: execução facilitada no Windows
 - `scripts/start-local.sh`: execução facilitada no Linux/macOS
+- `scripts/logs.ps1`: visualização de logs no Windows
+- `scripts/logs.sh`: visualização de logs no Linux/macOS
 - `.env.example`: modelo centralizado de variáveis de ambiente
 
 ## Documentação complementar
