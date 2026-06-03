@@ -34,7 +34,7 @@ Fluxo principal:
 
 ## Arquitetura da solução
 
-![Arquitetura OffPay Insights](https://media.discordapp.net/attachments/1417871654817894594/1511562961091694733/image.png?ex=6a20e835&is=6a1f96b5&hm=28a66641593ab5e0f691a1e59a5fc45654553258add1178c2d704e25daa57599&=&format=webp&quality=lossless&width=1573&height=353.png)
+![Arquitetura OffPay Insights](https://imgur.com/a/Hi62frU.png)
 
 ## Dados consultados
 

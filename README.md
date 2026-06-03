@@ -80,6 +80,31 @@ flowchart LR
     WA4 --> WA3
 ```
 
+## Justificativa da arquitetura de microsservicos
+
+A arquitetura de microsservicos foi adotada porque o problema do OffPay envolve dominios distintos, com responsabilidades bem separadas e necessidades diferentes de processamento.
+
+- o `signal-auth-service` concentra autenticacao, identidade, Spring Security e JWT
+- o `signal-sales-service` isola a operacao comercial, catalogo, pedidos e sincronizacao offline-first
+- o `signal-payment-service` separa a regra financeira, carteira e processamento assincrono de pagamentos
+- o `signal-analytics-ai-service` fica responsavel pela leitura de contexto, consolidacao de dados e uso de Spring AI
+
+Essa divisao reduz acoplamento, facilita manutencao, melhora a clareza das responsabilidades e justifica o uso de comunicacao entre servicos em uma solucao com autenticacao, operacao comercial, pagamentos e inteligencia analitica.
+
+## Recursos tecnicos aplicados na solucao
+
+- API REST com Spring Boot em todos os microsservicos
+- persistencia em banco de dados relacional
+- controle de acesso com Spring Security e tokens JWT
+- documentacao com Swagger e OpenAPI
+- uso de HATEOAS em endpoints selecionados
+- uso de cache onde faz sentido para reduzir custo de leitura
+- suporte a CORS para integracao com clientes externos
+- mensageria com RabbitMQ para eventos e processamento assincrono
+- uso de Feign para comunicacao entre microsservicos
+- uso de Spring AI no `signal-analytics-ai-service`
+- funcionalidade real voltada a operacao offline-first, sincronizacao, carteira, pagamentos e geracao de insights
+
 ## Fluxo resumido
 
 1. O usuario se autentica no `signal-auth-service`.
@@ -137,6 +162,24 @@ docker compose up -d --build
 
 ```powershell
 docker compose logs -f
+```
+
+### Logs locais
+
+Ou use os atalhos:
+
+No Windows:
+
+```powershell
+./scripts/logs.ps1
+./scripts/logs.ps1 -Service signal-auth-service
+```
+
+No Linux/macOS:
+
+```bash
+./scripts/logs.sh
+./scripts/logs.sh signal-auth-service
 ```
 
 ### Endpoints locais
@@ -282,6 +325,11 @@ Crie no Azure DevOps:
 - `scripts/script-infra-rabbitmq.sh`: cria RabbitMQ em Azure Container Instances
 - `scripts/script-infra-webapps.sh`: cria e configura os quatro Web Apps
 - `scripts/script-infra-validate.sh`: valida os recursos provisionados
+- `scripts/init-local-oracle.sh`: bootstrap do banco local opcional
+- `scripts/start-local.ps1`: execucao facilitada no Windows
+- `scripts/start-local.sh`: execucao facilitada no Linux/macOS
+- `scripts/logs.ps1`: visualizacao de logs no Windows
+- `scripts/logs.sh`: visualizacao de logs no Linux/macOS
 - `.env.example`: modelo centralizado de variaveis de ambiente
 
 ## CRUD exposto em JSON
