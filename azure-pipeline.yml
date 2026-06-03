@@ -107,11 +107,11 @@ stages:
                 -DskipTests
 
           - task: Docker@2
-            displayName: Build and Push Auth Image
+            displayName: Build Auth Image
             inputs:
               containerRegistry: $(dockerRegistryServiceConnection)
               repository: $(authImageRepository)
-              command: buildAndPush
+              command: build
               Dockerfile: dockerfiles/signal-auth-service.Dockerfile
               buildContext: $(Build.SourcesDirectory)
               tags: |
@@ -119,11 +119,21 @@ stages:
                 latest
 
           - task: Docker@2
-            displayName: Build and Push Sales Image
+            displayName: Push Auth Image
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(authImageRepository)
+              command: push
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: Build Sales Image
             inputs:
               containerRegistry: $(dockerRegistryServiceConnection)
               repository: $(salesImageRepository)
-              command: buildAndPush
+              command: build
               Dockerfile: dockerfiles/signal-sales-service.Dockerfile
               buildContext: $(Build.SourcesDirectory)
               tags: |
@@ -131,11 +141,21 @@ stages:
                 latest
 
           - task: Docker@2
-            displayName: Build and Push Payment Image
+            displayName: Push Sales Image
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(salesImageRepository)
+              command: push
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: Build Payment Image
             inputs:
               containerRegistry: $(dockerRegistryServiceConnection)
               repository: $(paymentImageRepository)
-              command: buildAndPush
+              command: build
               Dockerfile: dockerfiles/signal-payment-service.Dockerfile
               buildContext: $(Build.SourcesDirectory)
               tags: |
@@ -143,13 +163,33 @@ stages:
                 latest
 
           - task: Docker@2
-            displayName: Build and Push Analytics Image
+            displayName: Push Payment Image
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(paymentImageRepository)
+              command: push
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: Build Analytics Image
             inputs:
               containerRegistry: $(dockerRegistryServiceConnection)
               repository: $(analyticsImageRepository)
-              command: buildAndPush
+              command: build
               Dockerfile: dockerfiles/signal-analytics-ai-service.Dockerfile
               buildContext: $(Build.SourcesDirectory)
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: Push Analytics Image
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(analyticsImageRepository)
+              command: push
               tags: |
                 $(tag)
                 latest

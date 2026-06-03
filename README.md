@@ -1,6 +1,6 @@
 # OFFPAY
 
-Projeto desenvolvido para manter a operacao de pequenos comercios funcionando mesmo em cenarios de instabilidade de rede, com arquitetura baseada em microsservicos, mensageria e abordagem offline-first.
+Projeto desenvolvido para manter a operação de pequenos comércios funcionando mesmo em cenários de instabilidade de rede, com arquitetura baseada em microsserviços, mensageria e abordagem offline-first.
 
 ## Integrantes do grupo
 
@@ -10,28 +10,28 @@ Projeto desenvolvido para manter a operacao de pequenos comercios funcionando me
 
 ## Problema abordado
 
-Pequenos comercios perdem vendas quando a internet falha no momento do pedido, do pagamento ou da consulta ao catalogo. Em cenarios de instabilidade, o vendedor fica sem acesso confiavel aos pedidos, ao saldo da carteira e ao processamento do pagamento. Isso gera fila, retrabalho e risco operacional.
+Pequenos comércios perdem vendas quando a internet falha no momento do pedido, do pagamento ou da consulta ao catálogo. Em cenários de instabilidade, o vendedor fica sem acesso confiável aos pedidos, ao saldo da carteira e ao processamento do pagamento. Isso gera fila, retrabalho e risco operacional.
 
-O projeto OffPay trata esse problema com uma abordagem offline-first. A operacao da loja continua mesmo sem conectividade total, registrando pedidos e pagamentos localmente, mantendo evidencias para sincronizacao posterior e reduzindo o impacto de falhas na rede.
+O projeto OffPay trata esse problema com uma abordagem offline-first. A operação da loja continua mesmo sem conectividade total, registrando pedidos e pagamentos localmente, mantendo evidências para sincronização posterior e reduzindo o impacto de falhas na rede.
 
-## Objetivos da solucao
+## Objetivos da solução
 
 - Permitir que vendedores continuem vendendo offline
-- Sincronizar pedidos, catalogo e eventos quando a conectividade retornar
-- Registrar pagamentos com rastreabilidade e tratamento assincrono
+- Sincronizar pedidos, catálogo e eventos quando a conectividade retornar
+- Registrar pagamentos com rastreabilidade e tratamento assíncrono
 - Controlar carteira financeira de clientes e lojas
-- Manter trilha operacional via outbox para integracao entre servicos
-- Armazenar base de conhecimento para IA com chunks pesquisaveis
+- Manter trilha operacional via outbox para integração entre serviços
+- Armazenar base de conhecimento para IA com chunks pesquisáveis
 
-## Arquitetura da solucao
+## Arquitetura da solução
 
-O OffPay e composto por quatro microsservicos principais:
+O OffPay é composto por quatro microsserviços principais:
 
-| Servico | Porta | Papel |
+| Serviço | Porta | Papel |
 |--------|-------|-------|
-| `signal-auth-service` | `8081` | autenticacao, login, JWT e identidade |
-| `signal-sales-service` | `8082` | catalogo, categorias, produtos, pedidos e sincronizacao |
-| `signal-payment-service` | `8083` | carteira, transacoes e processamento financeiro |
+| `signal-auth-service` | `8081` | autenticação, login, JWT e identidade |
+| `signal-sales-service` | `8082` | catálogo, categorias, produtos, pedidos e sincronização |
+| `signal-payment-service` | `8083` | carteira, transações e processamento financeiro |
 | `signal-analytics-ai-service` | `8084` | analytics, insights e respostas em linguagem natural |
 
 ## Desenho macro da arquitetura
@@ -40,7 +40,7 @@ O desenho abaixo representa a arquitetura alvo da entrega em nuvem no Azure.
 
 ```mermaid
 flowchart LR
-    U[Usuario / Cliente API]
+    U[Usuário / Cliente API]
     ADO[Azure DevOps]
     AR[Azure Repos]
     AB[Azure Boards]
@@ -80,53 +80,53 @@ flowchart LR
     WA4 --> WA3
 ```
 
-## Justificativa da arquitetura de microsservicos
+## Justificativa da arquitetura de microsserviços
 
-A arquitetura de microsservicos foi adotada porque o problema do OffPay envolve dominios distintos, com responsabilidades bem separadas e necessidades diferentes de processamento.
+A arquitetura de microsserviços foi adotada porque o problema do OffPay envolve domínios distintos, com responsabilidades bem separadas e necessidades diferentes de processamento.
 
-- o `signal-auth-service` concentra autenticacao, identidade, Spring Security e JWT
-- o `signal-sales-service` isola a operacao comercial, catalogo, pedidos e sincronizacao offline-first
-- o `signal-payment-service` separa a regra financeira, carteira e processamento assincrono de pagamentos
-- o `signal-analytics-ai-service` fica responsavel pela leitura de contexto, consolidacao de dados e uso de Spring AI
+- o `signal-auth-service` concentra autenticação, identidade, Spring Security e JWT
+- o `signal-sales-service` isola a operação comercial, catálogo, pedidos e sincronização offline-first
+- o `signal-payment-service` separa a regra financeira, carteira e processamento assíncrono de pagamentos
+- o `signal-analytics-ai-service` fica responsável pela leitura de contexto, consolidação de dados e uso de Spring AI
 
-Essa divisao reduz acoplamento, facilita manutencao, melhora a clareza das responsabilidades e justifica o uso de comunicacao entre servicos em uma solucao com autenticacao, operacao comercial, pagamentos e inteligencia analitica.
+Essa divisão reduz acoplamento, facilita manutenção, melhora a clareza das responsabilidades e justifica o uso de comunicação entre serviços em uma solução com autenticação, operação comercial, pagamentos e inteligência analítica.
 
-## Recursos tecnicos aplicados na solucao
+## Recursos técnicos aplicados na solução
 
-- API REST com Spring Boot em todos os microsservicos
-- persistencia em banco de dados relacional
+- API REST com Spring Boot em todos os microsserviços
+- persistência em banco de dados relacional
 - controle de acesso com Spring Security e tokens JWT
-- documentacao com Swagger e OpenAPI
+- documentação com Swagger e OpenAPI
 - uso de HATEOAS em endpoints selecionados
 - uso de cache onde faz sentido para reduzir custo de leitura
-- suporte a CORS para integracao com clientes externos
-- mensageria com RabbitMQ para eventos e processamento assincrono
-- uso de Feign para comunicacao entre microsservicos
+- suporte a CORS para integração com clientes externos
+- mensageria com RabbitMQ para eventos e processamento assíncrono
+- uso de Feign para comunicação entre microsserviços
 - uso de Spring AI no `signal-analytics-ai-service`
-- funcionalidade real voltada a operacao offline-first, sincronizacao, carteira, pagamentos e geracao de insights
+- funcionalidade real voltada à operação offline-first, sincronização, carteira, pagamentos e geração de insights
 
 ## Fluxo resumido
 
-1. O usuario se autentica no `signal-auth-service`.
-2. O vendedor opera catalogo e pedidos no `signal-sales-service`.
+1. O usuário se autentica no `signal-auth-service`.
+2. O vendedor opera catálogo e pedidos no `signal-sales-service`.
 3. O `signal-payment-service` processa pagamentos e carteira.
-4. O `signal-analytics-ai-service` consolida informacoes e gera insights.
+4. O `signal-analytics-ai-service` consolida informações e gera insights.
 
-Quando ha falha de conectividade, a aplicacao mantem o registro da operacao e sincroniza os dados quando a rede retorna.
+Quando há falha de conectividade, a aplicação mantém o registro da operação e sincroniza os dados quando a rede retorna.
 
 ## Setup local
 
-Este repositorio deve ser executado como solucao completa. O microsservico de IA depende dos demais servicos para funcionar corretamente.
+Este repositório deve ser executado como solução completa. O microsserviço de IA depende dos demais serviços para funcionar corretamente.
 
-### Pre-requisitos
+### Pré-requisitos
 
 - Docker Desktop instalado
-- Docker Desktop em execucao
+- Docker Desktop em execução
 - Git instalado
 
 ### Passo a passo
 
-1. Clone o repositorio:
+1. Clone o repositório:
 
 ```bash
 git clone https://github.com/challengeoracle/global-java
@@ -138,13 +138,13 @@ git clone https://github.com/challengeoracle/global-java
 cd global-java
 ```
 
-3. Copie o arquivo de variaveis de ambiente:
+3. Copie o arquivo de variáveis de ambiente:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-4. Ajuste no `.env` pelo menos estas variaveis:
+4. Ajuste no `.env` pelo menos estas variáveis:
 
 - `JWT_SECRET`
 - `DB_URL`
@@ -152,13 +152,13 @@ Copy-Item .env.example .env
 - `DB_PASSWORD`
 - `GROQ_API_KEY`
 
-5. Suba todos os servicos:
+5. Suba todos os serviços:
 
 ```powershell
 docker compose up -d --build
 ```
 
-6. Acompanhe a inicializacao:
+6. Acompanhe a inicialização:
 
 ```powershell
 docker compose logs -f
@@ -192,12 +192,12 @@ No Linux/macOS:
 
 ## Banco de dados
 
-O projeto foi mantido compativel com dois cenarios:
+O projeto foi mantido compatível com dois cenários:
 
 - Oracle, que continua sendo o caminho legado do projeto
 - Azure SQL, que foi preparado para a entrega em nuvem
 
-A troca entre Oracle e Azure SQL acontece por variaveis de ambiente:
+A troca entre Oracle e Azure SQL acontece por variáveis de ambiente:
 
 - `DB_URL`
 - `DB_USERNAME`
@@ -224,9 +224,9 @@ Use:
 
 ## Provisionamento em nuvem com Azure CLI
 
-Os recursos da entrega devem ser criados via script. Os arquivos obrigatorios estao em `/scripts` com prefixo `script-infra`.
+Os recursos da entrega devem ser criados via script. Os arquivos obrigatórios estão em `/scripts` com prefixo `script-infra`.
 
-### Scripts incluidos
+### Scripts incluídos
 
 - `scripts/script-bd.sql`
 - `scripts/script-infra-base.sh`
@@ -280,32 +280,32 @@ bash scripts/script-infra-validate.sh
 
 ### Repos e Boards
 
-Este projeto deve ser importado para um repositorio privado no Azure Repos. Uma tarefa inicial deve ser criada no Azure Boards e vinculada a:
+Este projeto deve ser importado para um repositório privado no Azure Repos. Uma tarefa inicial deve ser criada no Azure Boards e vinculada a:
 
 - branch
 - commits
 - pull request
 
-### Politicas da branch principal
+### Políticas da branch principal
 
 A branch `main` deve ficar protegida com:
 
-- revisor obrigatorio
-- work item obrigatorio
-- revisor padrao
-- possibilidade de autoaprovacao para simulacao individual
+- revisor obrigatório
+- work item obrigatório
+- revisor padrão
+- possibilidade de autoaprovação para simulação individual
 
 ### Pipeline
 
 O arquivo `azure-pipeline.yml` na raiz implementa:
 
-- gatilho automatico na `main`
-- publicacao de testes JUnit
-- empacotamento dos quatro microsservicos
+- gatilho automático na `main`
+- publicação de testes JUnit
+- empacotamento dos quatro microsserviços
 - build e push das quatro imagens Docker para o ACR
-- publicacao de artefatos da CI
-- release automatica apos a build
-- deploy automatico nos quatro Web Apps
+- publicação de artefatos da CI
+- release automática após a build
+- deploy automático nos quatro Web Apps
 
 ### Service Connections esperadas
 
@@ -316,9 +316,9 @@ Crie no Azure DevOps:
 
 ## Estrutura DevOps
 
-- `docker-compose.yml`: orquestracao local completa
-- `dockerfiles/`: Dockerfiles de cada microsservico
-- `azure-pipeline.yml`: pipeline YAML com CI e release automatica
+- `docker-compose.yml`: orquestração local completa
+- `dockerfiles/`: Dockerfiles de cada microsserviço
+- `azure-pipeline.yml`: pipeline YAML com CI e release automática
 - `scripts/script-bd.sql`: DDL consolidado do banco da entrega
 - `scripts/script-infra-base.sh`: cria Resource Group, ACR e App Service Plan
 - `scripts/script-infra-db.sh`: cria Azure SQL Server e Azure SQL Database
@@ -326,15 +326,15 @@ Crie no Azure DevOps:
 - `scripts/script-infra-webapps.sh`: cria e configura os quatro Web Apps
 - `scripts/script-infra-validate.sh`: valida os recursos provisionados
 - `scripts/init-local-oracle.sh`: bootstrap do banco local opcional
-- `scripts/start-local.ps1`: execucao facilitada no Windows
-- `scripts/start-local.sh`: execucao facilitada no Linux/macOS
-- `scripts/logs.ps1`: visualizacao de logs no Windows
-- `scripts/logs.sh`: visualizacao de logs no Linux/macOS
-- `.env.example`: modelo centralizado de variaveis de ambiente
+- `scripts/start-local.ps1`: execução facilitada no Windows
+- `scripts/start-local.sh`: execução facilitada no Linux/macOS
+- `scripts/logs.ps1`: visualização de logs no Windows
+- `scripts/logs.sh`: visualização de logs no Linux/macOS
+- `.env.example`: modelo centralizado de variáveis de ambiente
 
 ## CRUD exposto em JSON
 
-Para a gravacao e para a correcao, a recomendacao mais segura e demonstrar CRUD completo em:
+Para a gravação e para a correção, a recomendação mais segura é demonstrar CRUD completo em:
 
 - `TB_PRODUCT_CATEGORIES`
 - `TB_PRODUCTS`
@@ -380,8 +380,8 @@ Sem body.
 ```json
 {
   "categoryId": "11111111-1111-1111-1111-111111111111",
-  "name": "Agua 500ml",
-  "description": "Garrafa de agua sem gas",
+  "name": "Água 500ml",
+  "description": "Garrafa de água sem gás",
   "price": 4.50,
   "stockQuantity": 100
 }
@@ -400,7 +400,7 @@ Sem body.
 ```json
 {
   "categoryId": "11111111-1111-1111-1111-111111111111",
-  "name": "Agua 500ml Premium",
+  "name": "Água 500ml Premium",
   "description": "Produto atualizado em nuvem",
   "price": 5.00,
   "stockQuantity": 120
@@ -413,9 +413,9 @@ Sem body.
 
 Sem body.
 
-## Validacao direta no banco em nuvem
+## Validação direta no banco em nuvem
 
-Na gravacao, nao use apenas `GET` para provar persistencia. Execute `SELECT` diretamente no Azure SQL.
+Na gravação, não use apenas `GET` para provar persistência. Execute `SELECT` diretamente no Azure SQL.
 
 ### Categoria
 
@@ -431,20 +431,20 @@ SELECT ID, NAME, PRICE, STOCK_QUANTITY, ACTIVE
 FROM TB_PRODUCTS;
 ```
 
-## Evidencias para o video
+## Evidências para o vídeo
 
-Na apresentacao, mostre nesta ordem:
+Na apresentação, mostre nesta ordem:
 
 1. README e desenho da arquitetura
 2. Recursos criados no Portal Azure
 3. Nova tarefa no Azure Boards
 4. Nova branch
-5. Alteracao real em codigo fonte
+5. Alteração real em código fonte
 6. Pull Request e merge na `main`
 7. Pipeline de Build
 8. Artefatos e testes publicados
 9. Pipeline de Release
-10. Aplicacao atualizada em nuvem
+10. Aplicação atualizada em nuvem
 11. CRUD de duas tabelas
 12. `SELECT` no banco em nuvem
 13. Task final com links de branch, commit e PR
