@@ -1,69 +1,107 @@
 # OFFPAY
 
-Projeto desenvolvido para manter a operação de pequenos comércios funcionando mesmo em cenários de instabilidade de rede, com arquitetura baseada em microsserviços, mensageria e abordagem offline-first.
+Projeto desenvolvido para manter a operacao de pequenos comercios funcionando mesmo em cenarios de instabilidade de rede, com arquitetura baseada em microsservicos, mensageria e abordagem offline-first.
 
 ## Integrantes do grupo
 
-- `RM561061` – Arthur Thomas Mariano de Souza
-- `RM559873` – Davi Cavalcanti Jorge
-- `RM559728` – Mateus da Silveira Lima
+- `RM561061` - Arthur Thomas Mariano de Souza
+- `RM559873` - Davi Cavalcanti Jorge
+- `RM559728` - Mateus da Silveira Lima
 
 ## Problema abordado
 
-Pequenos comércios perdem vendas quando a internet falha no momento do pedido, do pagamento ou da consulta ao catálogo. Em cenários de instabilidade, o vendedor fica sem acesso confiável aos pedidos, ao saldo da carteira e ao processamento do pagamento. Isso gera fila, retrabalho e risco operacional.
+Pequenos comercios perdem vendas quando a internet falha no momento do pedido, do pagamento ou da consulta ao catalogo. Em cenarios de instabilidade, o vendedor fica sem acesso confiavel aos pedidos, ao saldo da carteira e ao processamento do pagamento. Isso gera fila, retrabalho e risco operacional.
 
-O projeto OffPay trata esse problema com uma abordagem offline-first. A operação da loja continua mesmo sem conectividade total, registrando pedidos e pagamentos localmente, mantendo evidências para sincronização posterior e reduzindo o impacto de falhas na rede.
+O projeto OffPay trata esse problema com uma abordagem offline-first. A operacao da loja continua mesmo sem conectividade total, registrando pedidos e pagamentos localmente, mantendo evidencias para sincronizacao posterior e reduzindo o impacto de falhas na rede.
 
-## Objetivos da solução
+## Objetivos da solucao
 
 - Permitir que vendedores continuem vendendo offline
-- Sincronizar pedidos, catálogo e eventos quando a conectividade retornar
-- Registrar pagamentos com rastreabilidade e tratamento assíncrono
+- Sincronizar pedidos, catalogo e eventos quando a conectividade retornar
+- Registrar pagamentos com rastreabilidade e tratamento assincrono
 - Controlar carteira financeira de clientes e lojas
-- Manter trilha operacional via outbox para integração entre serviços
-- Armazenar base de conhecimento para IA com chunks pesquisáveis
+- Manter trilha operacional via outbox para integracao entre servicos
+- Armazenar base de conhecimento para IA com chunks pesquisaveis
 
-## Arquitetura da solução
+## Arquitetura da solucao
 
-O OffPay é composto por quatro microsserviços principais:
+O OffPay e composto por quatro microsservicos principais:
 
-| Serviço | Porta | Papel |
+| Servico | Porta | Papel |
 |--------|-------|-------|
-| `signal-auth-service` | `8081` | autenticação, login, JWT e identidade |
-| `signal-sales-service` | `8082` | catálogo, categorias, produtos, pedidos e sincronização |
-| `signal-payment-service` | `8083` | carteira, transações e processamento financeiro |
+| `signal-auth-service` | `8081` | autenticacao, login, JWT e identidade |
+| `signal-sales-service` | `8082` | catalogo, categorias, produtos, pedidos e sincronizacao |
+| `signal-payment-service` | `8083` | carteira, transacoes e processamento financeiro |
 | `signal-analytics-ai-service` | `8084` | analytics, insights e respostas em linguagem natural |
 
-Infraestrutura local utilizada:
+## Desenho macro da arquitetura
 
-| Componente | Porta | Papel |
-|-----------|-------|-------|
-| RabbitMQ | `5672` | mensageria entre serviços |
-| RabbitMQ Management | `15672` | painel de administração |
-| Oracle externo | configurado em `DB_URL` | persistência de dados |
+O desenho abaixo representa a arquitetura alvo da entrega em nuvem no Azure.
+
+```mermaid
+flowchart LR
+    U[Usuario / Cliente API]
+    ADO[Azure DevOps]
+    AR[Azure Repos]
+    AB[Azure Boards]
+    AP[Azure Pipelines]
+    ACR[Azure Container Registry]
+    WA1[Web App Auth]
+    WA2[Web App Sales]
+    WA3[Web App Payment]
+    WA4[Web App Analytics AI]
+    RMQ[RabbitMQ em ACI]
+    SQL[Azure SQL Database]
+
+    ADO --> AR
+    ADO --> AB
+    ADO --> AP
+    AP --> ACR
+    AP --> WA1
+    AP --> WA2
+    AP --> WA3
+    AP --> WA4
+
+    U --> WA1
+    U --> WA2
+    U --> WA3
+    U --> WA4
+
+    WA1 --> SQL
+    WA2 --> SQL
+    WA3 --> SQL
+    WA4 --> SQL
+
+    WA2 <--> RMQ
+    WA3 <--> RMQ
+    WA2 --> WA1
+    WA3 --> WA1
+    WA4 --> WA2
+    WA4 --> WA3
+```
 
 ## Fluxo resumido
 
-1. O usuário se autentica no `signal-auth-service`
-2. O vendedor opera catálogo e pedidos no `signal-sales-service`
-3. O `signal-payment-service` processa pagamentos e carteira
-4. O `signal-analytics-ai-service` consolida informações e gera insights
+1. O usuario se autentica no `signal-auth-service`.
+2. O vendedor opera catalogo e pedidos no `signal-sales-service`.
+3. O `signal-payment-service` processa pagamentos e carteira.
+4. O `signal-analytics-ai-service` consolida informacoes e gera insights.
 
-Quando há falha de conectividade, a aplicação mantém o registro da operação e sincroniza os dados quando a rede retorna.
+Quando ha falha de conectividade, a aplicacao mantem o registro da operacao e sincroniza os dados quando a rede retorna.
 
-## Setup do projeto
+## Setup local
 
-Este repositório deve ser executado como solução completa. O microsserviço de IA depende dos demais serviços para funcionar corretamente, então o professor e a equipe precisam subir o projeto inteiro.
+Este repositorio deve ser executado como solucao completa. O microsservico de IA depende dos demais servicos para funcionar corretamente.
 
-### Pré-requisitos
+### Pre-requisitos
 
 - Docker Desktop instalado
-- Docker Desktop em execução
+- Docker Desktop em execucao
 - Git instalado
 
 ### Passo a passo
 
-1. Clone o repositório:
+1. Clone o repositorio:
 
 ```bash
 git clone https://github.com/challengeoracle/global-java
@@ -75,60 +113,33 @@ git clone https://github.com/challengeoracle/global-java
 cd global-java
 ```
 
-3. Copie o arquivo de variáveis de ambiente:
-
-No Windows PowerShell:
+3. Copie o arquivo de variaveis de ambiente:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-No Linux/macOS:
-
-```bash
-cp .env.example .env
-```
-
-4. Ajuste no `.env` pelo menos estas variáveis:
+4. Ajuste no `.env` pelo menos estas variaveis:
 
 - `JWT_SECRET`
 - `DB_URL`
 - `DB_USERNAME`
 - `DB_PASSWORD`
-- `GROQ_API_KEY` caso queira testar o OffPay Insights com IA
+- `GROQ_API_KEY`
 
-Observação:
-
-- o fluxo padrão deste projeto já assume Oracle externo, como o Oracle da FIAP
-- para esse cenário, o `RABBITMQ_HOST` continua como `rabbitmq`, porque o RabbitMQ sobe em container e os microsserviços se comunicam com ele pela rede do Docker
-
-5. Suba todos os serviços na raiz do projeto:
+5. Suba todos os servicos:
 
 ```powershell
 docker compose up -d --build
 ```
 
-6. Se preferir, use os atalhos prontos:
-
-No Windows:
-
-```powershell
-./scripts/start-local.ps1
-```
-
-No Linux/macOS:
-
-```bash
-./scripts/start-local.sh
-```
-
-7. Acompanhe a inicialização:
+6. Acompanhe a inicializacao:
 
 ```powershell
 docker compose logs -f
 ```
 
-8. Acesse os serviços:
+### Endpoints locais
 
 - Auth: `http://localhost:8081/swagger-ui.html`
 - Sales: `http://localhost:8082/swagger-ui.html`
@@ -136,40 +147,256 @@ docker compose logs -f
 - Analytics AI: `http://localhost:8084/swagger-ui.html`
 - RabbitMQ Management: `http://localhost:15672`
 
-### Encerramento
-
-```powershell
-docker compose down
-```
-
-Para remover também o volume do banco local opcional:
-
-```powershell
-docker compose down -v
-```
-
 ## Banco de dados
 
-Por padrão, o projeto está preparado para usar um Oracle externo via `DB_URL`, como o da FIAP.
+O projeto foi mantido compativel com dois cenarios:
 
-Se você quiser usar um Oracle local em container, o `docker compose` também suporta isso com o profile `local-db`:
+- Oracle, que continua sendo o caminho legado do projeto
+- Azure SQL, que foi preparado para a entrega em nuvem
 
-```powershell
-docker compose --profile local-db up -d --build
+A troca entre Oracle e Azure SQL acontece por variaveis de ambiente:
+
+- `DB_URL`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `DB_DRIVER_CLASS_NAME`
+- `DB_DIALECT`
+- `FLYWAY_LOCATIONS`
+
+### Oracle legado
+
+Use:
+
+- `DB_DRIVER_CLASS_NAME=oracle.jdbc.OracleDriver`
+- `DB_DIALECT=org.hibernate.dialect.OracleDialect`
+- `FLYWAY_LOCATIONS=classpath:db/migration`
+
+### Azure SQL
+
+Use:
+
+- `DB_DRIVER_CLASS_NAME=com.microsoft.sqlserver.jdbc.SQLServerDriver`
+- `DB_DIALECT=org.hibernate.dialect.SQLServerDialect`
+- `FLYWAY_LOCATIONS=classpath:db/migration-sqlserver`
+
+## Provisionamento em nuvem com Azure CLI
+
+Os recursos da entrega devem ser criados via script. Os arquivos obrigatorios estao em `/scripts` com prefixo `script-infra`.
+
+### Scripts incluidos
+
+- `scripts/script-bd.sql`
+- `scripts/script-infra-base.sh`
+- `scripts/script-infra-db.sh`
+- `scripts/script-infra-rabbitmq.sh`
+- `scripts/script-infra-webapps.sh`
+- `scripts/script-infra-validate.sh`
+
+### Ordem recomendada
+
+1. Criar infra base:
+
+```bash
+export LOCATION=southafricanorth
+export SUFFIX=rm559728
+bash scripts/script-infra-base.sh
 ```
 
-Nesse modo, ele sobe um Oracle Free local para testes.
+2. Criar Azure SQL:
+
+```bash
+export SQL_ADMIN_PASSWORD='SuaSenhaForteAqui123!'
+bash scripts/script-infra-db.sh
+```
+
+3. Criar RabbitMQ:
+
+```bash
+bash scripts/script-infra-rabbitmq.sh
+```
+
+4. Criar Web Apps:
+
+```bash
+export DB_URL='jdbc:sqlserver://sql-offpay-rm559728.database.windows.net:1433;database=sqldb-offpay-rm559728;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;'
+export DB_USERNAME='sqladminoffpay'
+export DB_PASSWORD='SuaSenhaForteAqui123!'
+export JWT_SECRET='seu-segredo-com-32-caracteres-ou-mais'
+export GROQ_API_KEY='sua-chave'
+
+bash scripts/script-infra-webapps.sh
+```
+
+5. Validar os recursos:
+
+```bash
+bash scripts/script-infra-validate.sh
+```
+
+## Azure DevOps
+
+### Repos e Boards
+
+Este projeto deve ser importado para um repositorio privado no Azure Repos. Uma tarefa inicial deve ser criada no Azure Boards e vinculada a:
+
+- branch
+- commits
+- pull request
+
+### Politicas da branch principal
+
+A branch `main` deve ficar protegida com:
+
+- revisor obrigatorio
+- work item obrigatorio
+- revisor padrao
+- possibilidade de autoaprovacao para simulacao individual
+
+### Pipeline
+
+O arquivo `azure-pipeline.yml` na raiz implementa:
+
+- gatilho automatico na `main`
+- publicacao de testes JUnit
+- empacotamento dos quatro microsservicos
+- build e push das quatro imagens Docker para o ACR
+- publicacao de artefatos da CI
+- release automatica apos a build
+- deploy automatico nos quatro Web Apps
+
+### Service Connections esperadas
+
+Crie no Azure DevOps:
+
+- `Conexao-Azure-DevOps`
+- `Conexao-ACR`
 
 ## Estrutura DevOps
 
-- `docker-compose.yml`: orquestração local completa
-- `dockerfiles/`: Dockerfiles de cada microsserviço
-- `scripts/init-local-oracle.sh`: bootstrap do banco local opcional
-- `scripts/start-local.ps1`: execução facilitada no Windows
-- `scripts/start-local.sh`: execução facilitada no Linux/macOS
-- `.env.example`: modelo centralizado de variáveis de ambiente
+- `docker-compose.yml`: orquestracao local completa
+- `dockerfiles/`: Dockerfiles de cada microsservico
+- `azure-pipeline.yml`: pipeline YAML com CI e release automatica
+- `scripts/script-bd.sql`: DDL consolidado do banco da entrega
+- `scripts/script-infra-base.sh`: cria Resource Group, ACR e App Service Plan
+- `scripts/script-infra-db.sh`: cria Azure SQL Server e Azure SQL Database
+- `scripts/script-infra-rabbitmq.sh`: cria RabbitMQ em Azure Container Instances
+- `scripts/script-infra-webapps.sh`: cria e configura os quatro Web Apps
+- `scripts/script-infra-validate.sh`: valida os recursos provisionados
+- `.env.example`: modelo centralizado de variaveis de ambiente
 
-## Documentação complementar
+## CRUD exposto em JSON
 
-- O `README` da raiz descreve o projeto OffPay como um todo
-- O `README` de [`signal-analytics-ai-service`](C:/Users/mateu/Desktop/GS-26/global-java-fresh/signal-analytics-ai-service/README.md) detalha a entrega da trilha de IA Generativa e o microsserviço OffPay Insights
+Para a gravacao e para a correcao, a recomendacao mais segura e demonstrar CRUD completo em:
+
+- `TB_PRODUCT_CATEGORIES`
+- `TB_PRODUCTS`
+
+### Categoria - Create
+
+`POST /category`
+
+```json
+{
+  "name": "Bebidas",
+  "description": "Categoria de bebidas da loja"
+}
+```
+
+### Categoria - Read
+
+`GET /category/me`
+
+Sem body.
+
+### Categoria - Update
+
+`PUT /category/{id}`
+
+```json
+{
+  "name": "Bebidas Geladas",
+  "description": "Categoria atualizada para produtos refrigerados"
+}
+```
+
+### Categoria - Delete
+
+`DELETE /category/{id}`
+
+Sem body.
+
+### Produto - Create
+
+`POST /product`
+
+```json
+{
+  "categoryId": "11111111-1111-1111-1111-111111111111",
+  "name": "Agua 500ml",
+  "description": "Garrafa de agua sem gas",
+  "price": 4.50,
+  "stockQuantity": 100
+}
+```
+
+### Produto - Read
+
+`GET /product/{id}`
+
+Sem body.
+
+### Produto - Update
+
+`PUT /product/{id}`
+
+```json
+{
+  "categoryId": "11111111-1111-1111-1111-111111111111",
+  "name": "Agua 500ml Premium",
+  "description": "Produto atualizado em nuvem",
+  "price": 5.00,
+  "stockQuantity": 120
+}
+```
+
+### Produto - Delete
+
+`DELETE /product/{id}`
+
+Sem body.
+
+## Validacao direta no banco em nuvem
+
+Na gravacao, nao use apenas `GET` para provar persistencia. Execute `SELECT` diretamente no Azure SQL.
+
+### Categoria
+
+```sql
+SELECT ID, NAME, DESCRIPTION, ACTIVE
+FROM TB_PRODUCT_CATEGORIES;
+```
+
+### Produto
+
+```sql
+SELECT ID, NAME, PRICE, STOCK_QUANTITY, ACTIVE
+FROM TB_PRODUCTS;
+```
+
+## Evidencias para o video
+
+Na apresentacao, mostre nesta ordem:
+
+1. README e desenho da arquitetura
+2. Recursos criados no Portal Azure
+3. Nova tarefa no Azure Boards
+4. Nova branch
+5. Alteracao real em codigo fonte
+6. Pull Request e merge na `main`
+7. Pipeline de Build
+8. Artefatos e testes publicados
+9. Pipeline de Release
+10. Aplicacao atualizada em nuvem
+11. CRUD de duas tabelas
+12. `SELECT` no banco em nuvem
+13. Task final com links de branch, commit e PR

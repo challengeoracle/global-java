@@ -1,0 +1,239 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  javaVersion: '21'
+  artifactName: 'offpay-drop'
+  mavenCacheFolder: '$(Pipeline.Workspace)/.m2/repository'
+  azureSubscription: 'Conexao-Azure-DevOps'
+  dockerRegistryServiceConnection: 'Conexao-ACR'
+  acrName: 'offpayacrrm559728'
+  authImageRepository: 'offpay-auth-service'
+  salesImageRepository: 'offpay-sales-service'
+  paymentImageRepository: 'offpay-payment-service'
+  analyticsImageRepository: 'offpay-analytics-service'
+  authWebAppName: 'app-offpay-auth-rm559728'
+  salesWebAppName: 'app-offpay-sales-rm559728'
+  paymentWebAppName: 'app-offpay-payment-rm559728'
+  analyticsWebAppName: 'app-offpay-analytics-rm559728'
+  tag: '$(Build.BuildId)'
+
+stages:
+  - stage: Build
+    displayName: Build and Publish Artifacts
+    jobs:
+      - job: BuildMonorepo
+        displayName: Build OffPay Services
+        steps:
+          - task: Cache@2
+            displayName: Cache Maven Repository
+            inputs:
+              key: 'maven | "$(Agent.OS)" | **/pom.xml'
+              restoreKeys: |
+                maven | "$(Agent.OS)"
+              path: $(mavenCacheFolder)
+
+          - task: JavaToolInstaller@0
+            displayName: Use Java $(javaVersion)
+            inputs:
+              versionSpec: $(javaVersion)
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+
+          - task: Maven@4
+            displayName: Run Analytics Tests
+            inputs:
+              mavenPomFile: signal-analytics-ai-service/pom.xml
+              goals: test
+              publishJUnitResults: false
+              options: >-
+                -Dmaven.repo.local=$(mavenCacheFolder)
+                -Dspring.profiles.active=test
+
+          - task: PublishTestResults@2
+            displayName: Publish JUnit Results
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              failTaskOnFailedTests: true
+              testRunTitle: OffPay JUnit Tests
+
+          - task: Maven@4
+            displayName: Package Auth Service
+            inputs:
+              mavenPomFile: signal-auth-service/pom.xml
+              goals: clean package
+              publishJUnitResults: false
+              options: >-
+                -Dmaven.repo.local=$(mavenCacheFolder)
+                -DskipTests
+
+          - task: Maven@4
+            displayName: Package Sales Service
+            inputs:
+              mavenPomFile: signal-sales-service/pom.xml
+              goals: clean package
+              publishJUnitResults: false
+              options: >-
+                -Dmaven.repo.local=$(mavenCacheFolder)
+                -DskipTests
+
+          - task: Maven@4
+            displayName: Package Payment Service
+            inputs:
+              mavenPomFile: signal-payment-service/pom.xml
+              goals: clean package
+              publishJUnitResults: false
+              options: >-
+                -Dmaven.repo.local=$(mavenCacheFolder)
+                -DskipTests
+
+          - task: Maven@4
+            displayName: Package Analytics Service
+            inputs:
+              mavenPomFile: signal-analytics-ai-service/pom.xml
+              goals: clean package
+              publishJUnitResults: false
+              options: >-
+                -Dmaven.repo.local=$(mavenCacheFolder)
+                -DskipTests
+
+          - task: Docker@2
+            displayName: Build and Push Auth Image
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(authImageRepository)
+              command: buildAndPush
+              Dockerfile: dockerfiles/signal-auth-service.Dockerfile
+              buildContext: $(Build.SourcesDirectory)
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: Build and Push Sales Image
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(salesImageRepository)
+              command: buildAndPush
+              Dockerfile: dockerfiles/signal-sales-service.Dockerfile
+              buildContext: $(Build.SourcesDirectory)
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: Build and Push Payment Image
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(paymentImageRepository)
+              command: buildAndPush
+              Dockerfile: dockerfiles/signal-payment-service.Dockerfile
+              buildContext: $(Build.SourcesDirectory)
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: Build and Push Analytics Image
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(analyticsImageRepository)
+              command: buildAndPush
+              Dockerfile: dockerfiles/signal-analytics-ai-service.Dockerfile
+              buildContext: $(Build.SourcesDirectory)
+              tags: |
+                $(tag)
+                latest
+
+          - task: CopyFiles@2
+            displayName: Stage Build Outputs
+            inputs:
+              SourceFolder: $(Build.SourcesDirectory)
+              Contents: |
+                signal-auth-service/target/*.jar
+                signal-sales-service/target/*.jar
+                signal-payment-service/target/*.jar
+                signal-analytics-ai-service/target/*.jar
+                dockerfiles/**
+                scripts/**
+                docker-compose.yml
+                README.md
+                azure-pipeline.yml
+              TargetFolder: $(Build.ArtifactStagingDirectory)
+
+          - task: PublishBuildArtifacts@1
+            displayName: Publish Build Artifact
+            inputs:
+              PathtoPublish: $(Build.ArtifactStagingDirectory)
+              ArtifactName: $(artifactName)
+              publishLocation: Container
+
+  - stage: Deploy
+    displayName: Release to Azure
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployAuth
+        displayName: Deploy Auth Service
+        environment: offpay-auth
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebAppContainer@1
+                  displayName: Deploy Auth Container
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    appName: $(authWebAppName)
+                    containers: $(acrName).azurecr.io/$(authImageRepository):$(tag)
+
+      - deployment: DeploySales
+        displayName: Deploy Sales Service
+        environment: offpay-sales
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebAppContainer@1
+                  displayName: Deploy Sales Container
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    appName: $(salesWebAppName)
+                    containers: $(acrName).azurecr.io/$(salesImageRepository):$(tag)
+
+      - deployment: DeployPayment
+        displayName: Deploy Payment Service
+        environment: offpay-payment
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebAppContainer@1
+                  displayName: Deploy Payment Container
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    appName: $(paymentWebAppName)
+                    containers: $(acrName).azurecr.io/$(paymentImageRepository):$(tag)
+
+      - deployment: DeployAnalytics
+        displayName: Deploy Analytics Service
+        environment: offpay-analytics
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebAppContainer@1
+                  displayName: Deploy Analytics Container
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    appName: $(analyticsWebAppName)
+                    containers: $(acrName).azurecr.io/$(analyticsImageRepository):$(tag)
