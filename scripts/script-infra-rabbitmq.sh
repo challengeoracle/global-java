@@ -19,6 +19,7 @@ az container create \
   --name "${RABBIT_CONTAINER_GROUP}" \
   --image rabbitmq:3-management \
   --location "${LOCATION}" \
+  --os-type Linux \
   --dns-name-label "${RABBIT_DNS_LABEL}" \
   --ports 5672 15672 \
   --ip-address Public \
