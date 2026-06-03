@@ -50,7 +50,7 @@ create_webapp() {
     --name "${app_name}" \
     --resource-group "${RESOURCE_GROUP}" \
     --plan "${APP_SERVICE_PLAN}" \
-    --deployment-container-image-name "nginx:latest"
+    --container-image-name "nginx:latest"
 
   echo "Configurando container no Web App ${app_name}..."
   az webapp config container set \
