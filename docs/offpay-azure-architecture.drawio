@@ -1,0 +1,165 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.7.17 Chrome/128.0.6613.36 Electron/32.0.1 Safari/537.36" version="24.7.17">
+  <diagram id="offpay-azure-architecture-clean" name="OffPay Azure Architecture Clean">
+    <mxGraphModel dx="1500" dy="899" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Arquitetura Macro da Solução OffPay na Azure" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#0f172a;" parent="1" vertex="1">
+          <mxGeometry x="420" y="20" width="1000" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Fluxo de CI/CD com Azure DevOps, containers em App Service, persistência em Azure SQL e mensageria com RabbitMQ" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#475569;" parent="1" vertex="1">
+          <mxGeometry x="360" y="55" width="1120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="user" value="Usuário&lt;div&gt;Swagger / Postman&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;fontColor=#1e3a8a;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="430" y="495" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="devopsGroup" value="Azure DevOps" style="swimlane;html=1;rounded=1;fillColor=#fff7ed;strokeColor=#f97316;fontColor=#9a3412;fontStyle=1;startSize=28;" parent="1" vertex="1">
+          <mxGeometry x="310" y="140" width="360" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="boards" value="Azure Boards&#xa;Task / Work Item" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#fb923c;fontColor=#9a3412;fontSize=13;" parent="devopsGroup" vertex="1">
+          <mxGeometry x="20" y="60" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="repos" value="Azure Repos&#xa;Branch / Commit / PR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#fb923c;fontColor=#9a3412;fontSize=13;" parent="devopsGroup" vertex="1">
+          <mxGeometry x="200" y="60" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="boards_repos" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#f97316;" parent="devopsGroup" source="boards" target="repos" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pipelines" value="Azure Pipelines&#xa;Build + Release" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#fb923c;fontColor=#9a3412;fontSize=13;fontStyle=1;" parent="devopsGroup" vertex="1">
+          <mxGeometry x="200" y="150" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="repos_pipelines" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#f97316;" parent="devopsGroup" source="repos" target="pipelines" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="azureGroup" value="Microsoft Azure" style="swimlane;html=1;rounded=1;fillColor=#eff6ff;strokeColor=#0ea5e9;fontColor=#0c4a6e;fontStyle=1;startSize=28;" parent="1" vertex="1">
+          <mxGeometry x="730" y="100" width="1100" height="670" as="geometry" />
+        </mxCell>
+        <mxCell id="topLabel" value="Infraestrutura e Entrega" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#334155;" parent="azureGroup" vertex="1">
+          <mxGeometry x="40" y="45" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="acr" value="Azure Container Registry&#xa;offpayacrrm559728" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2fe;strokeColor=#38bdf8;fontColor=#0c4a6e;fontSize=13;fontStyle=1;" parent="azureGroup" vertex="1">
+          <mxGeometry x="20" y="45" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="artifact" value="Artefatos de Build&#xa;JARs + JUnit + scripts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f3ff;strokeColor=#8b5cf6;fontColor=#5b21b6;fontSize=13;" parent="azureGroup" vertex="1">
+          <mxGeometry x="320" y="40" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="plan" value="Azure App Service Plan&#xa;plan-offpay-rm559728" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2fe;strokeColor=#38bdf8;fontColor=#0c4a6e;fontSize=13;fontStyle=1;" parent="azureGroup" vertex="1">
+          <mxGeometry x="590" y="90" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="midLabel" value="Microsserviços Publicados na Azure" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#334155;" parent="azureGroup" vertex="1">
+          <mxGeometry x="110" y="220" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" value="Auth Service&#xa;JWT / Login / Cadastro" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#64748b;fontColor=#0f172a;fontSize=13;fontStyle=1;" parent="azureGroup" vertex="1">
+          <mxGeometry x="20" y="320" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="sales" value="Sales Service&#xa;Categorias / Produtos / Pedidos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#64748b;fontColor=#0f172a;fontSize=13;fontStyle=1;" parent="azureGroup" vertex="1">
+          <mxGeometry x="370" y="320" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="payment" value="Payment Service&#xa;Pagamentos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#64748b;fontColor=#0f172a;fontSize=13;fontStyle=1;" parent="azureGroup" vertex="1">
+          <mxGeometry x="640" y="290" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="analytics" value="Analytics AI Service&#xa;Analises / Insights" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#64748b;fontColor=#0f172a;fontSize=13;fontStyle=1;" parent="azureGroup" vertex="1">
+          <mxGeometry x="890" y="280" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="bottomLabel" value="Serviços de dados e integração" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#334155;" parent="azureGroup" vertex="1">
+          <mxGeometry x="10" y="480" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sql" value="Azure SQL Database&#xa;sql-offpay-rm559728&#xa;sqldb-offpay-rm559728" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#22c55e;fontColor=#166534;fontSize=13;fontStyle=1;" parent="azureGroup" vertex="1">
+          <mxGeometry x="160" y="520" width="260" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="rabbit" value="RabbitMQ em Azure Container Instances&#xa;aci-rabbitmq-offpay-rm559728" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#f59e0b;fontColor=#92400e;fontSize=13;fontStyle=1;" parent="azureGroup" vertex="1">
+          <mxGeometry x="730" y="520" width="280" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="plan_auth" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#38bdf8;" parent="azureGroup" source="plan" target="auth" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="plan_sales" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#38bdf8;" parent="azureGroup" source="plan" target="sales" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="plan_payment" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#38bdf8;" parent="azureGroup" source="plan" target="payment" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="plan_analytics" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#38bdf8;" parent="azureGroup" source="plan" target="analytics" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="services_sql" value="persistência principal" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#22c55e;fontSize=11;" parent="azureGroup" source="sales" target="sql" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="payment_sql" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#22c55e;" parent="azureGroup" source="payment" target="sql" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_sql" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#22c55e;" parent="azureGroup" source="auth" target="sql" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="analytics_sql" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#22c55e;" parent="azureGroup" source="analytics" target="sql" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="services_rabbit" value="mensageria" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#f59e0b;fontSize=11;" parent="azureGroup" source="payment" target="rabbit" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sales_rabbit" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#f59e0b;" parent="azureGroup" source="sales" target="rabbit" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_identity" value="validacao de identidade" style="endArrow=block;endFill=1;dashed=1;strokeWidth=2;strokeColor=#94a3b8;fontSize=11;" parent="azureGroup" source="sales" target="auth" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="analytics_data" value="consulta dados de vendas e pagamentos" style="endArrow=block;endFill=1;dashed=1;strokeWidth=2;strokeColor=#94a3b8;fontSize=11;" parent="azureGroup" source="analytics" target="payment" edge="1">
+          <mxGeometry x="-0.0306" y="26" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="880" y="250" />
+            </Array>
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FipCafEevi99CgVW2e2K-2" value="validacao de identidade" style="endArrow=block;endFill=1;dashed=1;strokeWidth=2;strokeColor=#94a3b8;fontSize=11;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="azureGroup" source="payment" target="auth">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="380" y="375" as="sourcePoint" />
+            <mxPoint x="220" y="375" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="620" y="290" />
+              <mxPoint x="420" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FipCafEevi99CgVW2e2K-3" value="validacao de identidade" style="endArrow=block;endFill=1;dashed=1;strokeWidth=2;strokeColor=#94a3b8;fontSize=11;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="azureGroup" source="analytics" target="auth">
+          <mxGeometry x="-0.8179" y="13" relative="1" as="geometry">
+            <mxPoint x="650" y="323" as="sourcePoint" />
+            <mxPoint x="220" y="353" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="740" y="430" />
+              <mxPoint x="320" y="420" />
+            </Array>
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="user_auth" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#64748b;" parent="1" source="user" target="auth" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="user_sales" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#64748b;" parent="1" source="pipelines" target="sales" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pipelines_acr" value="build e push das imagens" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0ea5e9;fontSize=11;" parent="1" source="pipelines" target="acr" edge="1">
+          <mxGeometry x="0.7521" y="-8" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pipelines_artifact" value="publicação de artefatos e relatorios" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#8b5cf6;fontSize=11;" parent="1" source="pipelines" target="artifact" edge="1">
+          <mxGeometry x="0.2623" y="-18" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pipelines_plan" value="release automatizada" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0ea5e9;fontSize=11;" parent="1" source="pipelines" target="plan" edge="1">
+          <mxGeometry x="0.549" y="-9" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="FipCafEevi99CgVW2e2K-1" value="" style="endArrow=block;endFill=1;strokeWidth=2;strokeColor=#64748b;" edge="1" parent="1" source="user" target="pipelines">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="250" y="369" as="sourcePoint" />
+            <mxPoint x="1030" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
