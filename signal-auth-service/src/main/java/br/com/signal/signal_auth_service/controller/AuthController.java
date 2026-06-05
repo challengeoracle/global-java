@@ -7,6 +7,8 @@ import br.com.signal.signal_auth_service.dto.RegisterSellerRequest;
 import br.com.signal.signal_auth_service.dto.UserResponse;
 import br.com.signal.signal_auth_service.hateoas.UserModelAssembler;
 import br.com.signal.signal_auth_service.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.hateoas.EntityModel;
@@ -18,12 +20,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Endpoints de cadastro, login e consulta do perfil autenticado.")
 public class AuthController {
 
     private final AuthService authService;
     private final UserModelAssembler userModelAssembler;
 
     @PostMapping("/register/seller")
+    @Operation(summary = "Cadastrar vendedor", description = "Cria um novo vendedor e a loja vinculada, retornando o JWT inicial.")
     public ResponseEntity<AuthResponse> registerSeller(
             @Valid @RequestBody RegisterSellerRequest request
     ) {
@@ -31,6 +35,7 @@ public class AuthController {
     }
 
     @PostMapping("/register/customer")
+    @Operation(summary = "Cadastrar cliente", description = "Cria um novo cliente e retorna o JWT inicial.")
     public ResponseEntity<AuthResponse> registerCustomer(
             @Valid @RequestBody RegisterCustomerRequest request
     ) {
@@ -38,6 +43,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Realizar login", description = "Autentica um usuario existente e retorna um novo JWT.")
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request
     ) {
@@ -45,6 +51,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @Operation(summary = "Consultar perfil autenticado", description = "Retorna os dados do usuario autenticado a partir do JWT enviado.")
     public ResponseEntity<EntityModel<UserResponse>> me(
             @AuthenticationPrincipal UserDetails userDetails
     ) {

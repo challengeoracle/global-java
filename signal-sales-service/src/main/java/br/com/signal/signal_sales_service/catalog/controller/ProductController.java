@@ -5,6 +5,9 @@ import br.com.signal.signal_sales_service.catalog.dto.request.UpdateProductReque
 import br.com.signal.signal_sales_service.catalog.dto.response.ProductResponse;
 import br.com.signal.signal_sales_service.catalog.service.ProductService;
 import br.com.signal.signal_sales_service.shared.dto.response.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,11 +20,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/product")
 @RequiredArgsConstructor
+@Tag(name = "Products", description = "Gestao de produtos do catalogo publico e da loja autenticada.")
 public class ProductController {
 
     private final ProductService productService;
 
     @PostMapping
+    @Operation(summary = "Criar produto", description = "Cria um novo produto vinculado a uma categoria da loja autenticada.")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ProductResponse> create(
             @RequestBody @Valid CreateProductRequest request,
             @RequestHeader("Authorization") String authorization
@@ -31,6 +37,7 @@ public class ProductController {
     }
 
     @GetMapping
+    @Operation(summary = "Listar produtos ativos", description = "Retorna todos os produtos ativos do catalogo.")
     public ResponseEntity<List<ProductResponse>> findAllActive() {
         return ResponseEntity.ok(
                 productService.findAllActive()
@@ -46,6 +53,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Consultar produto por id", description = "Retorna os detalhes de um produto ativo.")
     public ResponseEntity<ProductResponse> findById(
             @PathVariable UUID id
     ) {
@@ -111,6 +119,8 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Atualizar produto", description = "Atualiza os dados de um produto da loja autenticada.")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ProductResponse> update(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateProductRequest request,
@@ -122,6 +132,8 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Desativar produto", description = "Realiza a desativacao logica de um produto da loja autenticada.")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Void> deactivate(
             @PathVariable UUID id,
             @RequestHeader("Authorization") String authorization

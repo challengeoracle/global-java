@@ -1,128 +1,103 @@
 # OFFPAY
 
-Projeto desenvolvido para manter a operação de pequenos comércios funcionando mesmo em cenários de instabilidade de rede, com arquitetura baseada em microsserviços, mensageria e abordagem offline-first.
+Projeto acadêmico orientado a DevOps e cloud para manter a operação de pequenos comércios funcionando mesmo em cenários de instabilidade de rede, usando microsserviços, mensageria, autenticação centralizada e abordagem offline-first.
 
-## Integrantes do grupo
+## Integrantes
 
 - `RM561061` - Arthur Thomas Mariano de Souza
 - `RM559873` - Davi Cavalcanti Jorge
 - `RM559728` - Mateus da Silveira Lima
 
-## Problema abordado
+## Visão Geral
 
-Pequenos comércios perdem vendas quando a internet falha no momento do pedido, do pagamento ou da consulta ao catálogo. Em cenários de instabilidade, o vendedor fica sem acesso confiável aos pedidos, ao saldo da carteira e ao processamento do pagamento. Isso gera fila, retrabalho e risco operacional.
+O OffPay foi pensado para reduzir perdas operacionais quando a internet falha durante o fluxo de venda. Em vez de depender de uma conexão estável o tempo todo, a solução separa responsabilidades em microsserviços e mantém a operação da loja com foco em continuidade, sincronização posterior e rastreabilidade.
 
-O projeto OffPay trata esse problema com uma abordagem offline-first. A operação da loja continua mesmo sem conectividade total, registrando pedidos e pagamentos localmente, mantendo evidências para sincronização posterior e reduzindo o impacto de falhas na rede.
+Os domínios principais da solução são:
 
-## Objetivos da solução
+- autenticação e identidade
+- catálogo, categorias, produtos e pedidos
+- carteira e pagamentos
+- analytics e insights com IA
 
-- Permitir que vendedores continuem vendendo offline
-- Sincronizar pedidos, catálogo e eventos quando a conectividade retornar
-- Registrar pagamentos com rastreabilidade e tratamento assíncrono
-- Controlar carteira financeira de clientes e lojas
-- Manter trilha operacional via outbox para integração entre serviços
-- Armazenar base de conhecimento para IA com chunks pesquisáveis
+## Problema Resolvido
 
-## Arquitetura da solução
+Pequenos comércios perdem vendas quando a internet falha no momento do pedido, do pagamento ou da consulta ao catálogo. Isso gera filas, retrabalho, perda de confiança e risco operacional.
 
-O OffPay é composto por quatro microsserviços principais:
+O OffPay trata esse problema com uma abordagem offline-first:
+
+- mantém a operação comercial ativa
+- registra informações para sincronização posterior
+- reduz o impacto de instabilidades de rede
+- separa fluxos críticos em serviços independentes
+
+## Objetivos da Solução
+
+- permitir que vendedores continuem vendendo mesmo com instabilidade
+- sincronizar pedidos, catálogo e eventos quando a conectividade retornar
+- registrar pagamentos com rastreabilidade
+- manter uma separação clara entre autenticação, operação comercial, pagamentos e analytics
+- viabilizar entrega automatizada em nuvem com Azure DevOps
+
+## Microsserviços
 
 | Serviço | Porta | Papel |
-|--------|-------|-------|
-| `signal-auth-service` | `8081` | autenticação, login, JWT e identidade |
+|---|---:|---|
+| `signal-auth-service` | `8081` | autenticação, cadastro, login, JWT e identidade |
 | `signal-sales-service` | `8082` | catálogo, categorias, produtos, pedidos e sincronização |
 | `signal-payment-service` | `8083` | carteira, transações e processamento financeiro |
-| `signal-analytics-ai-service` | `8084` | analytics, insights e respostas em linguagem natural |
+| `signal-analytics-ai-service` | `8084` | resumos, gráficos, analytics e insights |
 
-## Desenho macro da arquitetura
+## Arquitetura Macro
 
-O desenho abaixo representa a arquitetura alvo da entrega em nuvem no Azure.
+O desenho abaixo representa a arquitetura macro da solução publicada na Azure, incluindo Azure DevOps, Container Registry, App Services, Azure SQL e RabbitMQ.
 
-```mermaid
-flowchart LR
-    U[Usuário / Cliente API]
-    ADO[Azure DevOps]
-    AR[Azure Repos]
-    AB[Azure Boards]
-    AP[Azure Pipelines]
-    ACR[Azure Container Registry]
-    WA1[Web App Auth]
-    WA2[Web App Sales]
-    WA3[Web App Payment]
-    WA4[Web App Analytics AI]
-    RMQ[RabbitMQ em ACI]
-    SQL[Azure SQL Database]
+![Arquitetura Macro da Solução OffPay na Azure](docs/offpay-azure-architecture.drawio.png)
 
-    ADO --> AR
-    ADO --> AB
-    ADO --> AP
-    AP --> ACR
-    AP --> WA1
-    AP --> WA2
-    AP --> WA3
-    AP --> WA4
+## Justificativa da Arquitetura
 
-    U --> WA1
-    U --> WA2
-    U --> WA3
-    U --> WA4
+A arquitetura de microsserviços foi adotada porque o problema envolve domínios diferentes e responsabilidades que precisam evoluir de forma relativamente independente.
 
-    WA1 --> SQL
-    WA2 --> SQL
-    WA3 --> SQL
-    WA4 --> SQL
+- o `auth-service` centraliza identidade, JWT e segurança
+- o `sales-service` concentra o fluxo operacional da loja
+- o `payment-service` isola a regra financeira
+- o `analytics-ai-service` consolida dados e responde perguntas analíticas
 
-    WA2 <--> RMQ
-    WA3 <--> RMQ
-    WA2 --> WA1
-    WA3 --> WA1
-    WA4 --> WA2
-    WA4 --> WA3
-```
+Essa divisão reduz acoplamento, melhora a manutenção e torna a solução mais adequada para uma entrega DevOps com build, artefatos, imagens Docker e deploy automatizado.
 
-## Justificativa da arquitetura de microsserviços
+## Recursos Técnicos Aplicados
 
-A arquitetura de microsserviços foi adotada porque o problema do OffPay envolve domínios distintos, com responsabilidades bem separadas e necessidades diferentes de processamento.
+- Spring Boot
+- APIs REST
+- Spring Security com JWT
+- Swagger / OpenAPI
+- HATEOAS em endpoints selecionados
+- RabbitMQ para mensageria
+- Feign Client para comunicação entre serviços
+- Flyway para versionamento do banco
+- Docker e Docker Compose
+- Azure DevOps Pipelines
+- Azure Web Apps for Containers
+- Azure SQL Database
+- Azure Container Registry
+- Spring AI no serviço de analytics
 
-- o `signal-auth-service` concentra autenticação, identidade, Spring Security e JWT
-- o `signal-sales-service` isola a operação comercial, catálogo, pedidos e sincronização offline-first
-- o `signal-payment-service` separa a regra financeira, carteira e processamento assíncrono de pagamentos
-- o `signal-analytics-ai-service` fica responsável pela leitura de contexto, consolidação de dados e uso de Spring AI
+## Fluxo Resumido da Solução
 
-Essa divisão reduz acoplamento, facilita manutenção, melhora a clareza das responsabilidades e justifica o uso de comunicação entre serviços em uma solução com autenticação, operação comercial, pagamentos e inteligência analítica.
+1. o usuário se autentica no `signal-auth-service`
+2. o vendedor opera categorias, produtos e pedidos no `signal-sales-service`
+3. o `signal-payment-service` processa carteira e transações
+4. o `signal-analytics-ai-service` consolida dados e gera resumos e insights
+5. a entrega em nuvem acontece com build, publicação de artefatos, build/push das imagens e deploy automático na Azure
 
-## Recursos técnicos aplicados na solução
+## Execução Local
 
-- API REST com Spring Boot em todos os microsserviços
-- persistência em banco de dados relacional
-- controle de acesso com Spring Security e tokens JWT
-- documentação com Swagger e OpenAPI
-- uso de HATEOAS em endpoints selecionados
-- uso de cache onde faz sentido para reduzir custo de leitura
-- suporte a CORS para integração com clientes externos
-- mensageria com RabbitMQ para eventos e processamento assíncrono
-- uso de Feign para comunicação entre microsserviços
-- uso de Spring AI no `signal-analytics-ai-service`
-- funcionalidade real voltada à operação offline-first, sincronização, carteira, pagamentos e geração de insights
-
-## Fluxo resumido
-
-1. O usuário se autentica no `signal-auth-service`.
-2. O vendedor opera catálogo e pedidos no `signal-sales-service`.
-3. O `signal-payment-service` processa pagamentos e carteira.
-4. O `signal-analytics-ai-service` consolida informações e gera insights.
-
-Quando há falha de conectividade, a aplicação mantém o registro da operação e sincroniza os dados quando a rede retorna.
-
-## Setup local
-
-Este repositório deve ser executado como solução completa. O microsserviço de IA depende dos demais serviços para funcionar corretamente.
+O repositório deve ser executado como solução completa.
 
 ### Pré-requisitos
 
-- Docker Desktop instalado
-- Docker Desktop em execução
-- Git instalado
+- Docker Desktop
+- Git
+- arquivo `.env` configurado
 
 ### Passo a passo
 
@@ -130,21 +105,16 @@ Este repositório deve ser executado como solução completa. O microsserviço d
 
 ```bash
 git clone https://github.com/challengeoracle/global-java
-```
-
-2. Entre na pasta do projeto:
-
-```bash
 cd global-java
 ```
 
-3. Copie o arquivo de variáveis de ambiente:
+2. Copie o arquivo de ambiente:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-4. Ajuste no `.env` pelo menos estas variáveis:
+3. Ajuste pelo menos:
 
 - `JWT_SECRET`
 - `DB_URL`
@@ -152,37 +122,19 @@ Copy-Item .env.example .env
 - `DB_PASSWORD`
 - `GROQ_API_KEY`
 
-5. Suba todos os serviços:
+4. Suba todos os serviços:
 
 ```powershell
 docker compose up -d --build
 ```
 
-6. Acompanhe a inicialização:
+5. Acompanhe os logs:
 
 ```powershell
 docker compose logs -f
 ```
 
-### Logs locais
-
-Ou use os atalhos:
-
-No Windows:
-
-```powershell
-./scripts/logs.ps1
-./scripts/logs.ps1 -Service signal-auth-service
-```
-
-No Linux/macOS:
-
-```bash
-./scripts/logs.sh
-./scripts/logs.sh signal-auth-service
-```
-
-### Endpoints locais
+### Endpoints Locais
 
 - Auth: `http://localhost:8081/swagger-ui.html`
 - Sales: `http://localhost:8082/swagger-ui.html`
@@ -190,14 +142,14 @@ No Linux/macOS:
 - Analytics AI: `http://localhost:8084/swagger-ui.html`
 - RabbitMQ Management: `http://localhost:15672`
 
-## Banco de dados
+## Banco de Dados
 
-O projeto foi mantido compatível com dois cenários:
+O projeto foi preparado para dois cenários:
 
-- Oracle, que continua sendo o caminho legado do projeto
-- Azure SQL, que foi preparado para a entrega em nuvem
+- Oracle legado
+- Azure SQL para a entrega em nuvem
 
-A troca entre Oracle e Azure SQL acontece por variáveis de ambiente:
+As variáveis principais são:
 
 - `DB_URL`
 - `DB_USERNAME`
@@ -206,9 +158,7 @@ A troca entre Oracle e Azure SQL acontece por variáveis de ambiente:
 - `DB_DIALECT`
 - `FLYWAY_LOCATIONS`
 
-### Oracle legado
-
-Use:
+### Oracle
 
 - `DB_DRIVER_CLASS_NAME=oracle.jdbc.OracleDriver`
 - `DB_DIALECT=org.hibernate.dialect.OracleDialect`
@@ -216,17 +166,15 @@ Use:
 
 ### Azure SQL
 
-Use:
-
 - `DB_DRIVER_CLASS_NAME=com.microsoft.sqlserver.jdbc.SQLServerDriver`
 - `DB_DIALECT=org.hibernate.dialect.SQLServerDialect`
 - `FLYWAY_LOCATIONS=classpath:db/migration-sqlserver`
 
-## Provisionamento em nuvem com Azure CLI
+## Provisionamento na Azure
 
-Os recursos da entrega devem ser criados via script. Os arquivos obrigatórios estão em `/scripts` com prefixo `script-infra`.
+Os recursos da entrega são criados por script via Azure CLI.
 
-### Scripts incluídos
+### Scripts obrigatórios
 
 - `scripts/script-bd.sql`
 - `scripts/script-infra-base.sh`
@@ -237,7 +185,7 @@ Os recursos da entrega devem ser criados via script. Os arquivos obrigatórios e
 
 ### Ordem recomendada
 
-1. Criar infra base:
+1. Infra base:
 
 ```bash
 export LOCATION=southafricanorth
@@ -245,32 +193,31 @@ export SUFFIX=rm559728
 bash scripts/script-infra-base.sh
 ```
 
-2. Criar Azure SQL:
+2. Azure SQL:
 
 ```bash
 export SQL_ADMIN_PASSWORD='SuaSenhaForteAqui123!'
 bash scripts/script-infra-db.sh
 ```
 
-3. Criar RabbitMQ:
+3. RabbitMQ:
 
 ```bash
 bash scripts/script-infra-rabbitmq.sh
 ```
 
-4. Criar Web Apps:
+4. Web Apps:
 
 ```bash
 export DB_URL='jdbc:sqlserver://sql-offpay-rm559728.database.windows.net:1433;database=sqldb-offpay-rm559728;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;'
 export DB_USERNAME='sqladminoffpay'
 export DB_PASSWORD='SuaSenhaForteAqui123!'
-export JWT_SECRET='seu-segredo-com-32-caracteres-ou-mais'
+export JWT_SECRET='sua-chave-base64'
 export GROQ_API_KEY='sua-chave'
-
 bash scripts/script-infra-webapps.sh
 ```
 
-5. Validar os recursos:
+5. Validação:
 
 ```bash
 bash scripts/script-infra-validate.sh
@@ -278,63 +225,58 @@ bash scripts/script-infra-validate.sh
 
 ## Azure DevOps
 
-### Repos e Boards
+### Organização esperada
 
-Este projeto deve ser importado para um repositório privado no Azure Repos. Uma tarefa inicial deve ser criada no Azure Boards e vinculada a:
+- projeto privado no Azure DevOps
+- código no Azure Repos
+- task criada no Azure Boards
+- branch de trabalho
+- PR para `main`
+- pipeline automática após merge
 
-- branch
-- commits
-- pull request
+### Políticas da `main`
 
-### Políticas da branch principal
-
-A branch `main` deve ficar protegida com:
+A `main` deve ficar protegida com:
 
 - revisor obrigatório
-- work item obrigatório
-- revisor padrão
-- possibilidade de autoaprovação para simulação individual
+- vínculo com work item
+- merge por PR
 
 ### Pipeline
 
-O arquivo `azure-pipeline.yml` na raiz implementa:
+O arquivo `azure-pipeline.yml` implementa:
 
-- gatilho automático na `main`
-- publicação de testes JUnit
-- empacotamento dos quatro microsserviços
-- build e push das quatro imagens Docker para o ACR
-- publicação de artefatos da CI
-- release automática após a build
-- deploy automático nos quatro Web Apps
+- trigger na `main`
+- execução de testes
+- publicação de resultados JUnit
+- empacotamento dos serviços
+- build e push das imagens Docker
+- publicação de artefatos
+- release automática nos Web Apps
 
-### Service Connections esperadas
+### Service Connections
 
-Crie no Azure DevOps:
+Crie:
 
 - `Conexao-Azure-DevOps`
 - `Conexao-ACR`
 
-## Estrutura DevOps
+## Artefatos e Estrutura DevOps
 
-- `docker-compose.yml`: orquestração local completa
-- `dockerfiles/`: Dockerfiles de cada microsserviço
-- `azure-pipeline.yml`: pipeline YAML com CI e release automática
-- `scripts/script-bd.sql`: DDL consolidado do banco da entrega
-- `scripts/script-infra-base.sh`: cria Resource Group, ACR e App Service Plan
-- `scripts/script-infra-db.sh`: cria Azure SQL Server e Azure SQL Database
-- `scripts/script-infra-rabbitmq.sh`: cria RabbitMQ em Azure Container Instances
-- `scripts/script-infra-webapps.sh`: cria e configura os quatro Web Apps
-- `scripts/script-infra-validate.sh`: valida os recursos provisionados
-- `scripts/init-local-oracle.sh`: bootstrap do banco local opcional
-- `scripts/start-local.ps1`: execução facilitada no Windows
-- `scripts/start-local.sh`: execução facilitada no Linux/macOS
-- `scripts/logs.ps1`: visualização de logs no Windows
-- `scripts/logs.sh`: visualização de logs no Linux/macOS
-- `.env.example`: modelo centralizado de variáveis de ambiente
+- `docker-compose.yml`: orquestração local
+- `dockerfiles/`: Dockerfiles por serviço
+- `azure-pipeline.yml`: pipeline CI/CD
+- `scripts/script-bd.sql`: DDL consolidado
+- `scripts/script-infra-base.sh`: Resource Group, ACR e App Service Plan
+- `scripts/script-infra-db.sh`: Azure SQL Server e Database
+- `scripts/script-infra-rabbitmq.sh`: RabbitMQ em ACI
+- `scripts/script-infra-webapps.sh`: criação e configuração dos Web Apps
+- `scripts/script-infra-validate.sh`: validação dos recursos
+- `.env.example`: modelo de variáveis
 
-## CRUD exposto em JSON
+## CRUD em JSON para Demonstração
 
-Para a gravação e para a correção, a recomendação mais segura é demonstrar CRUD completo em:
+Para a gravação, a recomendação mais segura é demonstrar CRUD em:
 
 - `TB_PRODUCT_CATEGORIES`
 - `TB_PRODUCTS`
@@ -354,8 +296,6 @@ Para a gravação e para a correção, a recomendação mais segura é demonstra
 
 `GET /category/me`
 
-Sem body.
-
 ### Categoria - Update
 
 `PUT /category/{id}`
@@ -370,8 +310,6 @@ Sem body.
 ### Categoria - Delete
 
 `DELETE /category/{id}`
-
-Sem body.
 
 ### Produto - Create
 
@@ -391,8 +329,6 @@ Sem body.
 
 `GET /product/{id}`
 
-Sem body.
-
 ### Produto - Update
 
 `PUT /product/{id}`
@@ -411,11 +347,9 @@ Sem body.
 
 `DELETE /product/{id}`
 
-Sem body.
+## Validação Direta no Banco
 
-## Validação direta no banco em nuvem
-
-Na gravação, não use apenas `GET` para provar persistência. Execute `SELECT` diretamente no Azure SQL.
+Na gravação, a persistência deve ser comprovada também com `SELECT` no banco da Azure.
 
 ### Categoria
 
@@ -431,20 +365,30 @@ SELECT ID, NAME, PRICE, STOCK_QUANTITY, ACTIVE
 FROM TB_PRODUCTS;
 ```
 
-## Evidências para o vídeo
+## Roteiro do Vídeo
 
-Na apresentação, mostre nesta ordem:
+O vídeo da entrega deve seguir esta ordem:
 
-1. README e desenho da arquitetura
-2. Recursos criados no Portal Azure
-3. Nova tarefa no Azure Boards
-4. Nova branch
-5. Alteração real em código fonte
-6. Pull Request e merge na `main`
-7. Pipeline de Build
-8. Artefatos e testes publicados
-9. Pipeline de Release
-10. Aplicação atualizada em nuvem
-11. CRUD de duas tabelas
-12. `SELECT` no banco em nuvem
-13. Task final com links de branch, commit e PR
+1. apresentar o `README`, a solução proposta e o desenho da arquitetura
+2. mostrar no Portal Azure os recursos criados pelos scripts
+3. criar uma nova task no Azure Boards
+4. criar uma nova branch
+5. simular uma alteração real em código fonte
+6. fazer merge na `main`
+7. executar automaticamente as Pipelines de Build e Release
+8. mostrar a execução completa das pipelines
+9. destacar artefatos publicados e testes executados
+10. demonstrar a alteração publicada em nuvem
+11. executar CRUD em pelo menos duas tabelas
+12. finalizar com a task concluída e os links de commit, branch e PR
+
+## Evidências Esperadas na Entrega
+
+- README explicando a solução
+- desenho macro da arquitetura
+- scripts de infraestrutura
+- pipeline YAML
+- artefatos de build
+- testes executados
+- deploy em nuvem
+- CRUD com persistência validada no banco

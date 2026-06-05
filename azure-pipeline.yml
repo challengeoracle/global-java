@@ -117,92 +117,46 @@ stages:
                 -DskipTests
 
           - task: Docker@2
+            displayName: Login to Azure Container Registry
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              command: login
+
+          - script: |
+              docker build -f dockerfiles/signal-auth-service.Dockerfile -t $(acrName).azurecr.io/$(authImageRepository):$(tag) -t $(acrName).azurecr.io/$(authImageRepository):latest .
             displayName: Build Auth Image
-            inputs:
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(authImageRepository)
-              command: build
-              Dockerfile: dockerfiles/signal-auth-service.Dockerfile
-              buildContext: $(Build.SourcesDirectory)
-              tags: |
-                $(tag)
-                latest
 
-          - task: Docker@2
+          - script: |
+              docker push $(acrName).azurecr.io/$(authImageRepository):$(tag)
+              docker push $(acrName).azurecr.io/$(authImageRepository):latest
             displayName: Push Auth Image
-            inputs:
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(authImageRepository)
-              command: push
-              tags: |
-                $(tag)
-                latest
 
-          - task: Docker@2
+          - script: |
+              docker build -f dockerfiles/signal-sales-service.Dockerfile -t $(acrName).azurecr.io/$(salesImageRepository):$(tag) -t $(acrName).azurecr.io/$(salesImageRepository):latest .
             displayName: Build Sales Image
-            inputs:
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(salesImageRepository)
-              command: build
-              Dockerfile: dockerfiles/signal-sales-service.Dockerfile
-              buildContext: $(Build.SourcesDirectory)
-              tags: |
-                $(tag)
-                latest
 
-          - task: Docker@2
+          - script: |
+              docker push $(acrName).azurecr.io/$(salesImageRepository):$(tag)
+              docker push $(acrName).azurecr.io/$(salesImageRepository):latest
             displayName: Push Sales Image
-            inputs:
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(salesImageRepository)
-              command: push
-              tags: |
-                $(tag)
-                latest
 
-          - task: Docker@2
+          - script: |
+              docker build -f dockerfiles/signal-payment-service.Dockerfile -t $(acrName).azurecr.io/$(paymentImageRepository):$(tag) -t $(acrName).azurecr.io/$(paymentImageRepository):latest .
             displayName: Build Payment Image
-            inputs:
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(paymentImageRepository)
-              command: build
-              Dockerfile: dockerfiles/signal-payment-service.Dockerfile
-              buildContext: $(Build.SourcesDirectory)
-              tags: |
-                $(tag)
-                latest
 
-          - task: Docker@2
+          - script: |
+              docker push $(acrName).azurecr.io/$(paymentImageRepository):$(tag)
+              docker push $(acrName).azurecr.io/$(paymentImageRepository):latest
             displayName: Push Payment Image
-            inputs:
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(paymentImageRepository)
-              command: push
-              tags: |
-                $(tag)
-                latest
 
-          - task: Docker@2
+          - script: |
+              docker build -f dockerfiles/signal-analytics-ai-service.Dockerfile -t $(acrName).azurecr.io/$(analyticsImageRepository):$(tag) -t $(acrName).azurecr.io/$(analyticsImageRepository):latest .
             displayName: Build Analytics Image
-            inputs:
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(analyticsImageRepository)
-              command: build
-              Dockerfile: dockerfiles/signal-analytics-ai-service.Dockerfile
-              buildContext: $(Build.SourcesDirectory)
-              tags: |
-                $(tag)
-                latest
 
-          - task: Docker@2
+          - script: |
+              docker push $(acrName).azurecr.io/$(analyticsImageRepository):$(tag)
+              docker push $(acrName).azurecr.io/$(analyticsImageRepository):latest
             displayName: Push Analytics Image
-            inputs:
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(analyticsImageRepository)
-              command: push
-              tags: |
-                $(tag)
-                latest
 
           - task: CopyFiles@2
             displayName: Stage Build Outputs
