@@ -1,24 +1,24 @@
 # SIGNAL Auth Service
 
-Servico de identidade do OffPay. Ele cuida do fluxo principal de cadastro, login, emissao de JWT e perfil autenticado de vendedor e cliente.
+Serviço de identidade do OffPay. Ele cuida do fluxo principal de cadastro, login, emissão de JWT e perfil autenticado de vendedor e cliente.
 
-API local:
+## Endereço local
 
 ```text
 http://localhost:8081
 ```
 
-Swagger local:
+## Swagger local
 
 ```text
-http://localhost:8081/swagger-ui.html
+http://localhost:8081/swagger-ui/index.html
 ```
 
 ## Responsabilidade
 
 O `signal-auth-service` responde por:
 
-| Funcao | Endpoint |
+| Função | Endpoint |
 |--------|----------|
 | Cadastro de vendedor | `POST /auth/register/seller` |
 | Cadastro de cliente | `POST /auth/register/customer` |
@@ -27,13 +27,13 @@ O `signal-auth-service` responde por:
 
 ## Papel no fluxo
 
-O `auth-service` e a porta de entrada da operacao:
+O `auth-service` é a porta de entrada da operação:
 
 - cria vendedor e cliente
-- entrega JWT para os outros servicos
+- entrega JWT para os outros serviços
 - informa `role`, `storeId` e `storeName`
 
-O `sales-service`, `payment-service` e `analytics-ai-service` usam esse contexto para identificar quem esta fazendo a operacao.
+O `sales-service`, `payment-service` e `analytics-ai-service` usam esse contexto para identificar quem está fazendo a operação.
 
 ## JWT e perfis
 
@@ -42,19 +42,19 @@ Perfis usados hoje:
 - `SELLER`
 - `CUSTOMER`
 
-O `GET /auth/me` devolve o contexto autenticado que o app usa para continuar o fluxo.
+O `GET /auth/me` devolve o contexto autenticado que a aplicação usa para continuar o fluxo.
 
 No vendedor, a resposta inclui a loja vinculada.
 
-## Seguranca
+## Segurança
 
-Publicos:
+Públicos:
 
 ```text
 POST /auth/register/seller
 POST /auth/register/customer
 POST /auth/login
-/swagger-ui.html
+/swagger-ui/index.html
 /v3/api-docs
 ```
 
@@ -64,7 +64,7 @@ Autenticados:
 GET /auth/me
 ```
 
-## Configuracao
+## Configuração
 
 ```text
 SERVER_PORT=8081
@@ -75,15 +75,15 @@ JWT_SECRET=
 JWT_EXPIRATION_MINUTES=120
 ```
 
-## Docker
+## Execução local
 
-Este servico faz parte do `docker-compose` da raiz e sobe com:
+Este serviço faz parte do `docker-compose` da raiz e pode ser iniciado com:
 
 ```powershell
 docker compose up -d --build signal-auth-service
 ```
 
-Variaveis esperadas no ambiente:
+Variáveis esperadas no ambiente:
 
 - `DB_URL`
 - `DB_USERNAME`

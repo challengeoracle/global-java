@@ -8,7 +8,7 @@ Projeto acadêmico orientado a DevOps e cloud para manter a operação de pequen
 - `RM559873` - Davi Cavalcanti Jorge
 - `RM559728` - Mateus da Silveira Lima
 
-## Visão Geral
+## Visão geral
 
 O OffPay foi pensado para reduzir perdas operacionais quando a internet falha durante o fluxo de venda. Em vez de depender de uma conexão estável o tempo todo, a solução separa responsabilidades em microsserviços e mantém a operação da loja com foco em continuidade, sincronização posterior e rastreabilidade.
 
@@ -19,7 +19,7 @@ Os domínios principais da solução são:
 - carteira e pagamentos
 - analytics e insights com IA
 
-## Problema Resolvido
+## Problema resolvido
 
 Pequenos comércios perdem vendas quando a internet falha no momento do pedido, do pagamento ou da consulta ao catálogo. Isso gera filas, retrabalho, perda de confiança e risco operacional.
 
@@ -30,7 +30,7 @@ O OffPay trata esse problema com uma abordagem offline-first:
 - reduz o impacto de instabilidades de rede
 - separa fluxos críticos em serviços independentes
 
-## Objetivos da Solução
+## Objetivos da solução
 
 - permitir que vendedores continuem vendendo mesmo com instabilidade
 - sincronizar pedidos, catálogo e eventos quando a conectividade retornar
@@ -47,13 +47,13 @@ O OffPay trata esse problema com uma abordagem offline-first:
 | `signal-payment-service` | `8083` | carteira, transações e processamento financeiro |
 | `signal-analytics-ai-service` | `8084` | resumos, gráficos, analytics e insights |
 
-## Arquitetura Macro
+## Arquitetura macro
 
 O desenho abaixo representa a arquitetura macro da solução publicada na Azure, incluindo Azure DevOps, Container Registry, App Services, Azure SQL e RabbitMQ.
 
 ![Arquitetura Macro da Solução OffPay na Azure](docs/offpay-azure-architecture.drawio.png)
 
-## Justificativa da Arquitetura
+## Justificativa da arquitetura
 
 A arquitetura de microsserviços foi adotada porque o problema envolve domínios diferentes e responsabilidades que precisam evoluir de forma relativamente independente.
 
@@ -62,9 +62,9 @@ A arquitetura de microsserviços foi adotada porque o problema envolve domínios
 - o `payment-service` isola a regra financeira
 - o `analytics-ai-service` consolida dados e responde perguntas analíticas
 
-Essa divisão reduz acoplamento, melhora a manutenção e torna a solução mais adequada para uma entrega DevOps com build, artefatos, imagens Docker e deploy automatizado.
+Essa divisão reduz acoplamento, melhora a manutenção e torna a solução adequada para uma entrega DevOps com build, artefatos, imagens Docker e deploy automatizado.
 
-## Recursos Técnicos Aplicados
+## Recursos técnicos aplicados
 
 - Spring Boot
 - APIs REST
@@ -81,15 +81,15 @@ Essa divisão reduz acoplamento, melhora a manutenção e torna a solução mais
 - Azure Container Registry
 - Spring AI no serviço de analytics
 
-## Fluxo Resumido da Solução
+## Fluxo resumido da solução
 
 1. o usuário se autentica no `signal-auth-service`
 2. o vendedor opera categorias, produtos e pedidos no `signal-sales-service`
 3. o `signal-payment-service` processa carteira e transações
 4. o `signal-analytics-ai-service` consolida dados e gera resumos e insights
-5. a entrega em nuvem acontece com build, publicação de artefatos, build/push das imagens e deploy automático na Azure
+5. a entrega em nuvem acontece com build, publicação de artefatos, build e push das imagens e deploy automático na Azure
 
-## Execução Local
+## Execução local
 
 O repositório deve ser executado como solução completa.
 
@@ -134,15 +134,37 @@ docker compose up -d --build
 docker compose logs -f
 ```
 
-### Endpoints Locais
+### Endpoints locais
 
-- Auth: `http://localhost:8081/swagger-ui.html`
-- Sales: `http://localhost:8082/swagger-ui.html`
-- Payment: `http://localhost:8083/swagger-ui.html`
-- Analytics AI: `http://localhost:8084/swagger-ui.html`
+- Auth: `http://localhost:8081/swagger-ui/index.html`
+- Sales: `http://localhost:8082/swagger-ui/index.html`
+- Payment: `http://localhost:8083/swagger-ui/index.html`
+- Analytics AI: `http://localhost:8084/swagger-ui/index.html`
 - RabbitMQ Management: `http://localhost:15672`
 
-## Banco de Dados
+## Deploy local com Docker
+
+Para desenvolvimento e testes rápidos, o caminho mais simples é usar o `docker compose` da raiz.
+
+Esse fluxo é indicado quando você quer:
+
+- validar o comportamento dos microsserviços localmente
+- testar variáveis de ambiente
+- conferir Swagger e integrações antes de publicar na nuvem
+
+Comando principal:
+
+```powershell
+docker compose up -d --build
+```
+
+Para derrubar o ambiente:
+
+```powershell
+docker compose down
+```
+
+## Banco de dados
 
 O projeto foi preparado para dois cenários:
 
@@ -209,7 +231,7 @@ bash scripts/script-infra-rabbitmq.sh
 4. Web Apps:
 
 ```bash
-export DB_URL='jdbc:sqlserver://sql-offpay-rm559728.database.windows.net:1433;database=sqldb-offpay-rm559728;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;'
+export DB_URL='jdbc:sqlserver://sql-offpay-rm559728.database.windows.net:1433;database=sqldb-offpay-rm559728;encrypt=true;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;'
 export DB_USERNAME='sqladminoffpay'
 export DB_PASSWORD='SuaSenhaForteAqui123!'
 export JWT_SECRET='sua-chave-base64'
@@ -222,6 +244,27 @@ bash scripts/script-infra-webapps.sh
 ```bash
 bash scripts/script-infra-validate.sh
 ```
+
+## Deploy na Azure
+
+Depois da infraestrutura pronta, o deploy da aplicação acontece pelo Azure DevOps.
+
+O fluxo esperado é:
+
+1. criar a task no Azure Boards
+2. criar uma branch de trabalho
+3. fazer a alteração no código
+4. abrir a Pull Request para `main`
+5. deixar a pipeline executar build, testes, artefatos e release
+6. validar os serviços publicados nos Web Apps
+
+O arquivo `azure-pipeline.yml` é responsável por:
+
+- executar testes automatizados
+- empacotar os microsserviços
+- montar as imagens Docker
+- publicar as imagens no Azure Container Registry
+- atualizar os Web Apps com a nova versão
 
 ## Azure DevOps
 
@@ -261,7 +304,7 @@ Crie:
 - `Conexao-Azure-DevOps`
 - `Conexao-ACR`
 
-## Artefatos e Estrutura DevOps
+## Artefatos e estrutura DevOps
 
 - `docker-compose.yml`: orquestração local
 - `dockerfiles/`: Dockerfiles por serviço
@@ -274,98 +317,23 @@ Crie:
 - `scripts/script-infra-validate.sh`: validação dos recursos
 - `.env.example`: modelo de variáveis
 
-## CRUD em JSON para Demonstração
+## Validação na nuvem
 
-Para a gravação, a recomendação mais segura é demonstrar CRUD em:
+Após o deploy, a validação pode ser feita pelos Swagger dos serviços:
 
-- `TB_PRODUCT_CATEGORIES`
-- `TB_PRODUCTS`
+- Auth: `https://app-offpay-auth-rm559728.azurewebsites.net/swagger-ui/index.html`
+- Sales: `https://app-offpay-sales-rm559728.azurewebsites.net/swagger-ui/index.html`
+- Payment: `https://app-offpay-payment-rm559728.azurewebsites.net/swagger-ui/index.html`
+- Analytics: `https://app-offpay-analytics-rm559728.azurewebsites.net/swagger-ui/index.html`
 
-### Categoria - Create
+Também é importante validar:
 
-`POST /category`
+- artefatos publicados na pipeline
+- testes executados no build
+- recursos criados no Portal Azure
+- persistência no banco Azure SQL
 
-```json
-{
-  "name": "Bebidas",
-  "description": "Categoria de bebidas da loja"
-}
-```
-
-### Categoria - Read
-
-`GET /category/me`
-
-### Categoria - Update
-
-`PUT /category/{id}`
-
-```json
-{
-  "name": "Bebidas Geladas",
-  "description": "Categoria atualizada para produtos refrigerados"
-}
-```
-
-### Categoria - Delete
-
-`DELETE /category/{id}`
-
-### Produto - Create
-
-`POST /product`
-
-```json
-{
-  "categoryId": "11111111-1111-1111-1111-111111111111",
-  "name": "Água 500ml",
-  "description": "Garrafa de água sem gás",
-  "price": 4.50,
-  "stockQuantity": 100
-}
-```
-
-### Produto - Read
-
-`GET /product/{id}`
-
-### Produto - Update
-
-`PUT /product/{id}`
-
-```json
-{
-  "categoryId": "11111111-1111-1111-1111-111111111111",
-  "name": "Água 500ml Premium",
-  "description": "Produto atualizado em nuvem",
-  "price": 5.00,
-  "stockQuantity": 120
-}
-```
-
-### Produto - Delete
-
-`DELETE /product/{id}`
-
-## Validação Direta no Banco
-
-Na gravação, a persistência deve ser comprovada também com `SELECT` no banco da Azure.
-
-### Categoria
-
-```sql
-SELECT ID, NAME, DESCRIPTION, ACTIVE
-FROM TB_PRODUCT_CATEGORIES;
-```
-
-### Produto
-
-```sql
-SELECT ID, NAME, PRICE, STOCK_QUANTITY, ACTIVE
-FROM TB_PRODUCTS;
-```
-
-## Roteiro do Vídeo
+## Roteiro do vídeo
 
 O vídeo da entrega deve seguir esta ordem:
 
@@ -379,10 +347,10 @@ O vídeo da entrega deve seguir esta ordem:
 8. mostrar a execução completa das pipelines
 9. destacar artefatos publicados e testes executados
 10. demonstrar a alteração publicada em nuvem
-11. executar CRUD em pelo menos duas tabelas
+11. executar operações pelos Swagger dos serviços publicados
 12. finalizar com a task concluída e os links de commit, branch e PR
 
-## Evidências Esperadas na Entrega
+## Evidências esperadas na entrega
 
 - README explicando a solução
 - desenho macro da arquitetura
@@ -391,4 +359,4 @@ O vídeo da entrega deve seguir esta ordem:
 - artefatos de build
 - testes executados
 - deploy em nuvem
-- CRUD com persistência validada no banco
+- serviços publicados e acessíveis

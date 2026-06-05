@@ -3,5 +3,4 @@
 .vscode/
 **/target/
 **/.mvn/wrapper/maven-wrapper.jar
-docs/
 *.postman_collection.json

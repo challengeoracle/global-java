@@ -2,19 +2,17 @@
 
 Serviço financeiro do OffPay. Ele processa pagamentos, controla carteira e devolve o status financeiro para o restante da operação.
 
-A API roda localmente em:
+## Endereço local
 
-```
+```text
 http://localhost:8083
 ```
 
-Swagger:
+## Swagger local
 
+```text
+http://localhost:8083/swagger-ui/index.html
 ```
-http://localhost:8083/swagger-ui.html
-```
-
----
 
 ## Responsabilidade
 
@@ -27,18 +25,13 @@ O `signal-payment-service` responde por:
 | Depositar saldo | `POST /wallet/deposit` |
 | Liquidar saldo pendente da loja | `POST /wallet/settle` |
 | Minhas movimentações da carteira | `GET /wallet/transactions/me` |
-| Minhas movimentações da carteira paginado | `GET /wallet/transactions/me/page` |
 | Minhas movimentações pessoais | `GET /wallet/transactions/personal/me` |
-| Minhas movimentações pessoais paginado | `GET /wallet/transactions/personal/me/page` |
 | Minhas transações de pagamento | `GET /payment/transactions/me` |
-| Minhas transações de pagamento paginado | `GET /payment/transactions/me/page` |
 | Transação por pedido | `GET /payment/transactions/order/{orderId}` |
-
----
 
 ## Papel no fluxo
 
-O `payment-service` só fecha a parte financeira quando a operação chega aos serviços centrais.
+O `payment-service` fecha a parte financeira da operação quando o pedido chega aos serviços centrais.
 
 Ele faz isto:
 
@@ -50,8 +43,6 @@ Ele faz isto:
 
 No fluxo offline-first, isso significa que pagamento confirmado sempre depende da sincronização e da validação online.
 
----
-
 ## Integração com Sales
 
 O serviço participa destes passos:
@@ -62,8 +53,6 @@ O serviço participa destes passos:
 4. publica `PaymentProcessed`
 
 Se houver falha temporária de mensageria, os eventos ficam em outbox para reenvio.
-
----
 
 ## Segurança
 
@@ -77,16 +66,14 @@ Autenticados:
 Públicos:
 
 ```text
-/swagger-ui.html
+/swagger-ui/index.html
 /v3/api-docs
 ```
 
----
-
 ## Configuração
 
-```yaml
-server.port=8083
+```text
+SERVER_PORT=8083
 DB_URL=
 DB_USERNAME=
 DB_PASSWORD=
@@ -98,9 +85,9 @@ RABBITMQ_USERNAME=guest
 RABBITMQ_PASSWORD=guest
 ```
 
-## Docker
+## Execução local
 
-Este serviço faz parte do `docker-compose` da raiz e sobe com:
+Este serviço faz parte do `docker-compose` da raiz e pode ser iniciado com:
 
 ```powershell
 docker compose up -d --build signal-payment-service
