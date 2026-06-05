@@ -48,9 +48,6 @@ jwt:
   secret: ${JWT_SECRET}
   expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
 
-offline:
-  session-expiration-hours: 24
-
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

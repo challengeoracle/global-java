@@ -48,7 +48,17 @@ stages:
               jdkSourceOption: PreInstalled
 
           - task: Maven@4
-            displayName: Run Analytics Tests
+            displayName: Run Auth Unit Tests
+            inputs:
+              mavenPomFile: signal-auth-service/pom.xml
+              goals: test
+              publishJUnitResults: false
+              options: >-
+                -Dmaven.repo.local=$(mavenCacheFolder)
+                -Dspring.profiles.active=test
+
+          - task: Maven@4
+            displayName: Run Analytics Context Tests
             inputs:
               mavenPomFile: signal-analytics-ai-service/pom.xml
               goals: test
