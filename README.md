@@ -40,12 +40,12 @@ O OffPay trata esse problema com uma abordagem offline-first:
 
 ## Microsserviços
 
-| Serviço | Porta | Papel |
-|---|---:|---|
-| `signal-auth-service` | `8081` | autenticação, cadastro, login, JWT e identidade |
-| `signal-sales-service` | `8082` | catálogo, categorias, produtos, pedidos e sincronização |
-| `signal-payment-service` | `8083` | carteira, transações e processamento financeiro |
-| `signal-analytics-ai-service` | `8084` | resumos, gráficos, analytics e insights |
+| Serviço                       |  Porta | Papel                                                   |
+| ----------------------------- | -----: | ------------------------------------------------------- |
+| `signal-auth-service`         | `8081` | autenticação, cadastro, login, JWT e identidade         |
+| `signal-sales-service`        | `8082` | catálogo, categorias, produtos, pedidos e sincronização |
+| `signal-payment-service`      | `8083` | carteira, transações e processamento financeiro         |
+| `signal-analytics-ai-service` | `8084` | resumos, gráficos, analytics e insights                 |
 
 ## Arquitetura macro
 
@@ -107,6 +107,8 @@ O repositório deve ser executado como solução completa.
 git clone https://github.com/challengeoracle/global-java
 cd global-java
 ```
+
+⚠⚠⚠ **Na entrega tem um arquivo `.env` já configurado, só colocar ele na raiz do projeto!** ⚠⚠⚠
 
 2. Copie o arquivo de ambiente:
 
@@ -325,38 +327,3 @@ Após o deploy, a validação pode ser feita pelos Swagger dos serviços:
 - Sales: `https://app-offpay-sales-rm559728.azurewebsites.net/swagger-ui/index.html`
 - Payment: `https://app-offpay-payment-rm559728.azurewebsites.net/swagger-ui/index.html`
 - Analytics: `https://app-offpay-analytics-rm559728.azurewebsites.net/swagger-ui/index.html`
-
-Também é importante validar:
-
-- artefatos publicados na pipeline
-- testes executados no build
-- recursos criados no Portal Azure
-- persistência no banco Azure SQL
-
-## Roteiro do vídeo
-
-O vídeo da entrega deve seguir esta ordem:
-
-1. apresentar o `README`, a solução proposta e o desenho da arquitetura
-2. mostrar no Portal Azure os recursos criados pelos scripts
-3. criar uma nova task no Azure Boards
-4. criar uma nova branch
-5. simular uma alteração real em código fonte
-6. fazer merge na `main`
-7. executar automaticamente as Pipelines de Build e Release
-8. mostrar a execução completa das pipelines
-9. destacar artefatos publicados e testes executados
-10. demonstrar a alteração publicada em nuvem
-11. executar operações pelos Swagger dos serviços publicados
-12. finalizar com a task concluída e os links de commit, branch e PR
-
-## Evidências esperadas na entrega
-
-- README explicando a solução
-- desenho macro da arquitetura
-- scripts de infraestrutura
-- pipeline YAML
-- artefatos de build
-- testes executados
-- deploy em nuvem
-- serviços publicados e acessíveis
