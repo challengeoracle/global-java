@@ -8,6 +8,9 @@ import br.com.signal.signal_sales_service.shared.dto.response.PageResponse;
 import br.com.signal.signal_sales_service.sync.dto.request.OrderSyncRequest;
 import br.com.signal.signal_sales_service.sync.dto.response.OrderSyncResponse;
 import br.com.signal.signal_sales_service.sync.service.OrderSyncService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.hateoas.EntityModel;
@@ -21,6 +24,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/order")
 @RequiredArgsConstructor
+@Tag(name = "Orders", description = "Criacao, consulta e sincronizacao de pedidos do OffPay.")
+@SecurityRequirement(name = "bearerAuth")
 public class OrderController {
 
     private final OrderService orderService;
@@ -28,6 +33,7 @@ public class OrderController {
     private final OrderModelAssembler orderModelAssembler;
 
     @GetMapping("/me")
+    @Operation(summary = "Listar meus pedidos", description = "Retorna os pedidos relacionados ao usuario autenticado.")
     public ResponseEntity<List<OrderResponse>> findMyOrders(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -44,6 +50,7 @@ public class OrderController {
     }
 
     @GetMapping("/me/sales")
+    @Operation(summary = "Listar minhas vendas", description = "Retorna os pedidos em que o usuario autenticado atua como vendedor.")
     public ResponseEntity<List<OrderResponse>> findMySales(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -60,6 +67,7 @@ public class OrderController {
     }
 
     @GetMapping("/me/purchases")
+    @Operation(summary = "Listar minhas compras", description = "Retorna os pedidos em que o usuario autenticado atua como comprador.")
     public ResponseEntity<List<OrderResponse>> findMyPurchases(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -76,6 +84,7 @@ public class OrderController {
     }
 
     @PostMapping
+    @Operation(summary = "Criar pedido online", description = "Cria um novo pedido online usando os dados enviados pelo cliente autenticado.")
     public ResponseEntity<OrderResponse> createOnlineOrder(
             @RequestBody @Valid CreateOrderRequest request,
             @RequestHeader("Authorization") String authorization
@@ -86,6 +95,7 @@ public class OrderController {
     }
 
     @PostMapping("/sync")
+    @Operation(summary = "Sincronizar pedidos offline", description = "Recebe pedidos criados offline e publica a sincronizacao no backend.")
     public ResponseEntity<OrderSyncResponse> syncOfflineOrders(
             @RequestBody @Valid OrderSyncRequest request,
             @RequestHeader("Authorization") String authorization
@@ -94,6 +104,7 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Consultar pedido por id", description = "Retorna os detalhes de um pedido visivel para o usuario autenticado.")
     public ResponseEntity<OrderResponse> findById(
             @PathVariable UUID id,
             @RequestHeader("Authorization") String authorization

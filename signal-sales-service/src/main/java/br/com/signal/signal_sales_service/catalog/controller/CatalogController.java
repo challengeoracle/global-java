@@ -6,6 +6,9 @@ import br.com.signal.signal_sales_service.sync.dto.request.CatalogSyncRequest;
 import br.com.signal.signal_sales_service.sync.dto.response.CatalogSyncResponse;
 import br.com.signal.signal_sales_service.catalog.service.CatalogService;
 import br.com.signal.signal_sales_service.sync.service.CatalogSyncService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.hateoas.EntityModel;
@@ -17,6 +20,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/catalog")
 @RequiredArgsConstructor
+@Tag(name = "Catalog", description = "Consulta e sincronizacao do catalogo da loja.")
 public class CatalogController {
 
     private final CatalogService catalogService;
@@ -24,6 +28,8 @@ public class CatalogController {
     private final CatalogModelAssembler catalogModelAssembler;
 
     @GetMapping("/me")
+    @Operation(summary = "Consultar meu catalogo", description = "Retorna o catalogo consolidado da loja do vendedor autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<CatalogResponse> findMyCatalog(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -33,6 +39,7 @@ public class CatalogController {
     }
 
     @GetMapping("/store/{storeId}")
+    @Operation(summary = "Consultar catalogo por loja", description = "Retorna o catalogo publico de uma loja especifica.")
     public ResponseEntity<CatalogResponse> findCatalogByStore(
             @PathVariable UUID storeId
     ) {
@@ -42,6 +49,7 @@ public class CatalogController {
     }
 
     @GetMapping("/store/{storeId}/resource")
+    @Operation(summary = "Consultar catalogo HATEOAS", description = "Retorna o catalogo publico de uma loja no formato de recurso HATEOAS.")
     public ResponseEntity<EntityModel<CatalogResponse>> findCatalogByStoreResource(
             @PathVariable UUID storeId
     ) {
@@ -51,6 +59,8 @@ public class CatalogController {
     }
 
     @PostMapping("/sync")
+    @Operation(summary = "Sincronizar catalogo", description = "Recebe alteracoes offline e sincroniza categorias e produtos do catalogo.")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<CatalogSyncResponse> syncCatalog(
             @RequestBody @Valid CatalogSyncRequest request,
             @RequestHeader("Authorization") String authorization

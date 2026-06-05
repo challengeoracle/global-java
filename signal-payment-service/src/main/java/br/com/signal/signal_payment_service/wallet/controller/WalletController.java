@@ -6,6 +6,9 @@ import br.com.signal.signal_payment_service.wallet.dto.response.WalletResponse;
 import br.com.signal.signal_payment_service.wallet.dto.response.WalletTransactionResponse;
 import br.com.signal.signal_payment_service.shared.dto.response.PageResponse;
 import br.com.signal.signal_payment_service.wallet.service.WalletService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -15,11 +18,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/wallet")
 @RequiredArgsConstructor
+@Tag(name = "Wallet", description = "Operacoes de carteira, saldo e movimentacoes financeiras.")
+@SecurityRequirement(name = "bearerAuth")
 public class WalletController {
 
     private final WalletService walletService;
 
     @GetMapping("/me")
+    @Operation(summary = "Consultar minha carteira", description = "Retorna os dados consolidados da carteira principal do usuario autenticado.")
     public WalletResponse findMyWallet(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -27,6 +33,7 @@ public class WalletController {
     }
 
     @GetMapping("/personal/me")
+    @Operation(summary = "Consultar carteira pessoal", description = "Retorna a carteira pessoal do usuario autenticado.")
     public WalletResponse findMyPersonalWallet(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -34,6 +41,7 @@ public class WalletController {
     }
 
     @PostMapping("/deposit")
+    @Operation(summary = "Realizar deposito", description = "Adiciona saldo na carteira do usuario autenticado.")
     public WalletResponse deposit(
             @RequestHeader("Authorization") String authorization,
             @RequestBody @Valid DepositRequest request
@@ -42,6 +50,7 @@ public class WalletController {
     }
 
     @PostMapping("/settle")
+    @Operation(summary = "Liquidar carteira", description = "Executa uma operacao de liquidacao de saldo na carteira.")
     public WalletResponse settle(
             @RequestHeader("Authorization") String authorization,
             @RequestBody @Valid SettleWalletRequest request
@@ -50,6 +59,7 @@ public class WalletController {
     }
 
     @GetMapping("/transactions/me")
+    @Operation(summary = "Listar movimentacoes da carteira", description = "Retorna as movimentacoes da carteira principal do usuario autenticado.")
     public List<WalletTransactionResponse> findMyTransactions(
             @RequestHeader("Authorization") String authorization
     ) {
