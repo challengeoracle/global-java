@@ -113,7 +113,7 @@ public class GlobalExceptionHandler {
                 ErrorResponse.builder()
                         .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                         .error("Internal Server Error")
-                        .message("Nao foi possivel concluir a solicitacao de IA no momento.")
+                        .message("Não foi possível concluir a solicitação de IA no momento.")
                         .timestamp(LocalDateTime.now())
                         .build()
         );

@@ -3,6 +3,7 @@ package br.com.signal.signal_analytics_ai_service.ai.knowledge;
 import br.com.signal.signal_analytics_ai_service.shared.dto.response.AuthUserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -23,10 +24,12 @@ public class KnowledgeRetrievalService {
     @Value("${knowledge.retrieval.max-chunks:3}")
     private int maxChunks;
 
+    @Cacheable(cacheNames = "knowledgeRetrieval", key = "T(java.util.Objects).toString(#authUser == null ? null : #authUser.role, 'UNKNOWN') + ':' + T(java.util.Objects).toString(#question, '')")
     public List<KnowledgeSnippet> retrieve(AuthUserResponse authUser, String question) {
         return retrieveInternal(authUser, question);
     }
 
+    @Cacheable(cacheNames = "knowledgeRetrieval", key = "T(java.util.Objects).toString(#role, 'UNKNOWN') + ':' + T(java.util.Objects).toString(#question, '')")
     public List<KnowledgeSnippet> retrieveByRole(String role, String question) {
         AuthUserResponse authUser = AuthUserResponse.builder().role(role).build();
         return retrieveInternal(authUser, question);

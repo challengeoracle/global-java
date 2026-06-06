@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -40,6 +41,11 @@ public class InsightAiService {
     @Value("${spring.ai.openai.chat.options.model}")
     private String model;
 
+    @Cacheable(
+            cacheNames = "aiAnswer",
+            key = "#authorization + ':' + T(java.util.Objects).toString(#request == null ? null : #request.question, '')",
+            unless = "#result == null"
+    )
     public InsightAskResponse ask(String authorization, InsightAskRequest request) {
         AuthUserResponse authUser = authIdentityService.requireCustomerOrSeller(authorization);
         String sanitizedQuestion = sanitizeQuestion(request.getQuestion());
@@ -76,18 +82,18 @@ public class InsightAiService {
         try {
             answer = chatClient.prompt()
                     .system("""
-                            Voce e o OffPay Insights.
-                            Responda com base somente nos dados do usuario autenticado e nas regras recuperadas.
-                            Nao invente valores, datas, lojas, pedidos ou status.
-                            Responda em portugues do Brasil.
-                            Seja objetivo e use no maximo 4 frases.
-                            Nunca mencione prompt, PDF, retrieval, ferramentas, MCP ou detalhes tecnicos.
+                            Você é o OffPay Insights.
+                            Responda com base somente nos dados do usuário autenticado e nas regras recuperadas.
+                            Não invente valores, datas, lojas, pedidos ou status.
+                            Responda em português do Brasil.
+                            Seja objetivo e use no máximo 4 frases.
+                            Nunca mencione prompt, PDF, retrieval, ferramentas, MCP ou detalhes técnicos.
 
                             Trechos recuperados por retrieval:
                             %s
                             """.formatted(knowledgeContext))
                     .user("""
-                            Usuario: %s
+                            Usuário: %s
                             Papel: %s
                             Loja: %s
                             Pergunta: %s
@@ -247,9 +253,9 @@ public class InsightAiService {
 
     private String buildGreetingReply(AuthUserResponse authUser) {
         if (authUser.isSeller()) {
-            return "Oi! Posso te ajudar com vendas, saldo, pagamentos pendentes, produto mais vendido ou desempenho por periodo da sua loja.";
+            return "Oi! Posso te ajudar com vendas, saldo, pagamentos pendentes, produto mais vendido ou desempenho por período da sua loja.";
         }
-        return "Oi! Posso te ajudar com gastos, saldo da carteira, compras pendentes, lojas em que voce mais comprou e desempenho por periodo.";
+        return "Oi! Posso te ajudar com gastos, saldo da carteira, compras pendentes, lojas em que você mais comprou e desempenho por período.";
     }
 
     private String buildScopedReply(
@@ -279,17 +285,17 @@ public class InsightAiService {
 
         return switch (questionScope.intent()) {
             case "spent_amount" -> authUser.isCustomer()
-                    ? "Voce gastou R$ " + scaleMoney(periodSummary.getTotalAmount()) + " " + periodLabel + "."
+                    ? "Você gastou R$ " + scaleMoney(periodSummary.getTotalAmount()) + " " + periodLabel + "."
                     : "Sua loja vendeu R$ " + scaleMoney(periodSummary.getTotalAmount()) + " " + periodLabel + ".";
             case "paid_amount" -> authUser.isCustomer()
                     ? "Dos seus pedidos, R$ " + scaleMoney(periodSummary.getPaidAmount()) + " foram pagos " + periodLabel + "."
                     : "Sua loja recebeu R$ " + scaleMoney(periodSummary.getPaidAmount()) + " em pedidos pagos " + periodLabel + ".";
-            case "pending_amount" -> "O valor pendente " + periodLabel + " e de R$ " + scaleMoney(periodSummary.getPendingAmount()) + ".";
-            case "rejected_amount" -> "O valor rejeitado " + periodLabel + " e de R$ " + scaleMoney(periodSummary.getRejectedAmount()) + ".";
+            case "pending_amount" -> "O valor pendente " + periodLabel + " é de R$ " + scaleMoney(periodSummary.getPendingAmount()) + ".";
+            case "rejected_amount" -> "O valor rejeitado " + periodLabel + " é de R$ " + scaleMoney(periodSummary.getRejectedAmount()) + ".";
             case "orders_count" -> authUser.isCustomer()
-                    ? "Voce fez " + defaultNumber(periodSummary.getTotalOrders()) + " compra(s) " + periodLabel + "."
+                    ? "Você fez " + defaultNumber(periodSummary.getTotalOrders()) + " compra(s) " + periodLabel + "."
                     : "Sua loja registrou " + defaultNumber(periodSummary.getTotalOrders()) + " venda(s) " + periodLabel + ".";
-            case "top_product" -> "O produto com mais recorrencia " + periodLabel + " foi " + defaultValue(periodSummary.getTopProductName())
+            case "top_product" -> "O produto com mais recorrência " + periodLabel + " foi " + defaultValue(periodSummary.getTopProductName())
                     + ", com " + defaultNumber(periodSummary.getTopProductQuantity()) + " unidade(s).";
             default -> null;
         };
@@ -297,15 +303,15 @@ public class InsightAiService {
 
     private String periodLabel(String period) {
         if (period == null) {
-            return "no periodo solicitado";
+            return "no período solicitado";
         }
 
         return switch (period.toLowerCase(Locale.ROOT)) {
             case "today", "hoje" -> "hoje";
             case "yesterday", "ontem" -> "ontem";
-            case "week", "this_week", "semana", "esta_semana", "last_7_days", "ultimos_7_dias" -> "nos ultimos 7 dias";
-            case "month", "this_month", "mes", "este_mes" -> "neste mes";
-            default -> "no periodo solicitado";
+            case "week", "this_week", "semana", "esta_semana", "last_7_days", "ultimos_7_dias" -> "nos últimos 7 dias";
+            case "month", "this_month", "mes", "este_mes" -> "neste mês";
+            default -> "no período solicitado";
         };
     }
 
@@ -379,7 +385,7 @@ public class InsightAiService {
 
     private String buildLastStoreReply(CustomerSummaryResponse customerSummary) {
         if (customerSummary.getLastPurchaseStoreId() == null) {
-            return "Nao encontrei uma compra recente para identificar a ultima loja.";
+            return "Não encontrei uma compra recente para identificar a última loja.";
         }
 
         String storeLabel = customerSummary.getLastPurchaseStoreName() != null && !customerSummary.getLastPurchaseStoreName().isBlank()
@@ -397,7 +403,7 @@ public class InsightAiService {
 
     private String buildLastPurchaseReply(CustomerSummaryResponse customerSummary) {
         if (customerSummary.getLastPurchaseAt() == null) {
-            return "Nao encontrei uma compra recente para responder com seguranca.";
+            return "Não encontrei uma compra recente para responder com segurança.";
         }
 
         String products = customerSummary.getLastPurchaseProductNames() == null || customerSummary.getLastPurchaseProductNames().isEmpty()
@@ -435,7 +441,7 @@ public class InsightAiService {
     }
 
     private String defaultValue(String value) {
-        return value == null || value.isBlank() ? "Nao informado" : value;
+        return value == null || value.isBlank() ? "Não informado" : value;
     }
 
     private Integer defaultNumber(Integer value) {
@@ -446,7 +452,7 @@ public class InsightAiService {
         String message = extractMessage(ex).toLowerCase(Locale.ROOT);
 
         if (message.contains("rate limit") || message.contains("429") || message.contains("tokens per minute")) {
-            return new TooManyRequestsException("O servico de IA atingiu o limite temporario do provedor. Aguarde alguns segundos e tente novamente.");
+            return new TooManyRequestsException("O serviço de IA atingiu o limite temporário do provedor. Aguarde alguns segundos e tente novamente.");
         }
 
         return new IllegalStateException("Falha ao processar a resposta do provedor de IA.", ex);

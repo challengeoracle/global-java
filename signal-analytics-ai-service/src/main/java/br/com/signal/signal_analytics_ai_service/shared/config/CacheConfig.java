@@ -23,7 +23,9 @@ public class CacheConfig {
                 "analyticsMyChart",
                 "analyticsSellerChart",
                 "analyticsCustomerChart",
-                "storeById"
+                "storeById",
+                "aiAnswer",
+                "knowledgeRetrieval"
         );
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(500)
