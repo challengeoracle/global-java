@@ -8,6 +8,7 @@ import br.com.signal.signal_analytics_ai_service.analytics.dto.client.WalletClie
 import br.com.signal.signal_analytics_ai_service.analytics.dto.response.*;
 import br.com.signal.signal_analytics_ai_service.shared.dto.response.AuthUserResponse;
 import br.com.signal.signal_analytics_ai_service.shared.service.AuthIdentityService;
+import br.com.signal.signal_analytics_ai_service.shared.service.StoreLookupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class AnalyticsSummaryService {
     private final AuthIdentityService authIdentityService;
     private final SalesClient salesClient;
     private final PaymentClient paymentClient;
+    private final StoreLookupService storeLookupService;
 
     @Cacheable(cacheNames = "analyticsMySummary", key = "#authorization")
     public AnalyticsSummaryResponse getMySummary(String authorization) {
@@ -118,6 +120,7 @@ public class AnalyticsSummaryService {
 
         TopProductResult topProduct = findTopProductResult(purchases);
         UUID favoriteStoreId = findFavoriteStoreId(purchases);
+        RecentPurchaseResponse lastPurchase = findMostRecentPurchase(authorization, purchases);
 
         BigDecimal totalSpent = sumOrders(purchases);
         BigDecimal paidAmount = sumByPaymentStatus(purchases, "PAID");
@@ -137,6 +140,14 @@ public class AnalyticsSummaryService {
                 .pendingAmount(pendingAmount)
                 .walletBalance(wallet == null ? BigDecimal.ZERO : nullToZero(wallet.getBalance()))
                 .favoriteStoreId(favoriteStoreId)
+                .favoriteStoreName(storeLookupService.findStoreName(authorization, favoriteStoreId))
+                .lastPurchaseStoreId(lastPurchase == null ? null : lastPurchase.getStoreId())
+                .lastPurchaseStoreName(lastPurchase == null ? null : lastPurchase.getStoreName())
+                .lastPurchaseOrderId(lastPurchase == null ? null : defaultText(lastPurchase.getLocalOrderId(), lastPurchase.getOrderId()))
+                .lastPurchaseAmount(lastPurchase == null ? BigDecimal.ZERO : nullToZero(lastPurchase.getTotalAmount()))
+                .lastPurchasePaymentStatus(lastPurchase == null ? "Nao informado" : defaultText(lastPurchase.getPaymentStatus()))
+                .lastPurchaseAt(lastPurchase == null ? null : lastPurchase.getPurchasedAt())
+                .lastPurchaseProductNames(lastPurchase == null ? List.of() : defaultList(lastPurchase.getProductNames()))
                 .mostPurchasedProductName(topProduct.productName())
                 .mostPurchasedProductQuantity(topProduct.quantity())
                 .message("Voce possui " + purchases.size() + " compra(s), totalizando R$ "
@@ -162,8 +173,10 @@ public class AnalyticsSummaryService {
                 .stream()
                 .map(entry -> CustomerSpendingByStoreResponse.builder()
                         .storeId(entry.getKey())
+                        .storeName(storeLookupService.findStoreName(authorization, entry.getKey()))
                         .purchases(entry.getValue().size())
                         .totalSpent(sumOrders(entry.getValue()))
+                        .lastPurchaseAt(findLatestDateTime(entry.getValue()).orElse(null))
                         .build())
                 .sorted(Comparator.comparing(CustomerSpendingByStoreResponse::getTotalSpent).reversed())
                 .toList();
@@ -178,6 +191,7 @@ public class AnalyticsSummaryService {
                 .rejectedAmount(sumByPaymentStatus(purchases, "REJECTED"))
                 .spendingByStore(spendingByStore)
                 .mostPurchasedProducts(buildTopProducts(purchases))
+                .recentPurchases(buildRecentPurchases(authorization, purchases, 5))
                 .message("Voce possui " + purchases.size() + " compra(s), totalizando R$ "
                         + sumOrders(purchases) + ".")
                 .build();
@@ -377,8 +391,12 @@ public class AnalyticsSummaryService {
     }
 
     private LocalDate resolveOrderDate(OrderClientResponse order) {
-        LocalDateTime reference = order.getOfflineCreatedAt() != null ? order.getOfflineCreatedAt() : order.getCreatedAt();
+        LocalDateTime reference = resolveOrderDateTime(order);
         return reference == null ? null : reference.toLocalDate();
+    }
+
+    private LocalDateTime resolveOrderDateTime(OrderClientResponse order) {
+        return order.getOfflineCreatedAt() != null ? order.getOfflineCreatedAt() : order.getCreatedAt();
     }
 
     private List<OrderClientResponse> filterOrdersByPeriod(List<OrderClientResponse> orders, PeriodWindow window) {
@@ -391,6 +409,67 @@ public class AnalyticsSummaryService {
                 .toList();
     }
 
+    private RecentPurchaseResponse findMostRecentPurchase(String authorization, List<OrderClientResponse> orders) {
+        return orders.stream()
+                .filter(order -> resolveOrderDateTime(order) != null)
+                .max(Comparator.comparing(this::resolveOrderDateTime))
+                .map(order -> toRecentPurchaseResponse(authorization, order))
+                .orElse(null);
+    }
+
+    private List<RecentPurchaseResponse> buildRecentPurchases(String authorization, List<OrderClientResponse> orders, int limit) {
+        return orders.stream()
+                .filter(order -> resolveOrderDateTime(order) != null)
+                .sorted(Comparator.comparing(this::resolveOrderDateTime).reversed())
+                .limit(Math.max(1, limit))
+                .map(order -> toRecentPurchaseResponse(authorization, order))
+                .toList();
+    }
+
+    private RecentPurchaseResponse toRecentPurchaseResponse(String authorization, OrderClientResponse order) {
+        List<String> productNames = order.getItems() == null
+                ? List.of()
+                : order.getItems().stream()
+                .map(item -> item.getProductName() == null || item.getProductName().isBlank() ? "Produto sem nome" : item.getProductName())
+                .distinct()
+                .toList();
+
+        return RecentPurchaseResponse.builder()
+                .orderId(order.getId())
+                .localOrderId(order.getLocalOrderId())
+                .storeId(order.getStoreId())
+                .storeName(storeLookupService.findStoreName(authorization, order.getStoreId()))
+                .purchasedAt(resolveOrderDateTime(order))
+                .totalAmount(nullToZero(order.getTotalAmount()))
+                .paymentStatus(order.getPaymentStatus())
+                .orderStatus(order.getOrderStatus())
+                .syncStatus(order.getSyncStatus())
+                .productNames(productNames)
+                .build();
+    }
+
+    private Optional<LocalDateTime> findLatestDateTime(List<OrderClientResponse> orders) {
+        return orders.stream()
+                .map(this::resolveOrderDateTime)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo);
+    }
+
+    private String defaultText(String primary, UUID fallbackId) {
+        if (primary != null && !primary.isBlank()) {
+            return primary;
+        }
+        return fallbackId == null ? "Nao informado" : fallbackId.toString();
+    }
+
+    private String defaultText(String value) {
+        return value == null || value.isBlank() ? "Nao informado" : value;
+    }
+
+    private List<String> defaultList(List<String> values) {
+        return values == null ? List.of() : values;
+    }
+
     private PeriodWindow resolvePeriod(String period) {
         LocalDate today = LocalDate.now();
         String normalized = period == null ? "today" : period.trim().toLowerCase(Locale.ROOT);
@@ -398,7 +477,7 @@ public class AnalyticsSummaryService {
         return switch (normalized) {
             case "today", "hoje" -> new PeriodWindow("TODAY", today, today);
             case "yesterday", "ontem" -> new PeriodWindow("YESTERDAY", today.minusDays(1), today.minusDays(1));
-            case "week", "this_week", "semana", "esta_semana" -> new PeriodWindow("THIS_WEEK", today.minusDays(6), today);
+            case "week", "this_week", "semana", "esta_semana", "last_7_days", "ultimos_7_dias" -> new PeriodWindow("LAST_7_DAYS", today.minusDays(6), today);
             case "month", "this_month", "mes", "este_mes" -> new PeriodWindow("THIS_MONTH", today.withDayOfMonth(1), today);
             default -> new PeriodWindow("TODAY", today, today);
         };

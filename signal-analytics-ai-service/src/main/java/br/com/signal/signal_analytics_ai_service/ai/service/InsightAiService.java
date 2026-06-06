@@ -7,6 +7,7 @@ import br.com.signal.signal_analytics_ai_service.ai.knowledge.KnowledgeSnippet;
 import br.com.signal.signal_analytics_ai_service.ai.tool.InsightRuntimeTools;
 import br.com.signal.signal_analytics_ai_service.analytics.dto.response.AnalyticsPeriodSummaryResponse;
 import br.com.signal.signal_analytics_ai_service.analytics.dto.response.AnalyticsSummaryResponse;
+import br.com.signal.signal_analytics_ai_service.analytics.dto.response.CustomerSummaryResponse;
 import br.com.signal.signal_analytics_ai_service.analytics.service.AnalyticsSummaryService;
 import br.com.signal.signal_analytics_ai_service.shared.dto.response.AuthUserResponse;
 import br.com.signal.signal_analytics_ai_service.shared.exception.TooManyRequestsException;
@@ -53,14 +54,17 @@ public class InsightAiService {
         AnalyticsPeriodSummaryResponse periodSummary = questionScope.period() == null
                 ? null
                 : analyticsSummaryService.getMyPeriodSummary(authorization, questionScope.period());
+        CustomerSummaryResponse customerSummary = authUser.isCustomer()
+                ? analyticsSummaryService.getCustomerSummary(authorization)
+                : null;
 
-        String scopedReply = buildScopedReply(authUser, questionScope, periodSummary);
+        String scopedReply = buildScopedReply(authUser, questionScope, periodSummary, customerSummary);
         if (scopedReply != null) {
             return buildStaticResponse(scopedReply, "period_scope");
         }
 
         String knowledgeContext = knowledgeRetrievalService.renderContext(snippets);
-        String summaryJson = toJson(buildPromptSummary(authorization, authUser, summary, periodSummary, questionScope));
+        String summaryJson = toJson(buildPromptSummary(authorization, authUser, summary, periodSummary, questionScope, customerSummary));
         InsightRuntimeTools runtimeTools = new InsightRuntimeTools(
                 authorization,
                 authUser,
@@ -124,7 +128,8 @@ public class InsightAiService {
             AuthUserResponse authUser,
             AnalyticsSummaryResponse summary,
             AnalyticsPeriodSummaryResponse periodSummary,
-            QuestionScope questionScope
+            QuestionScope questionScope,
+            CustomerSummaryResponse customerSummary
     ) {
         Map<String, Object> promptSummary = new LinkedHashMap<>();
         promptSummary.put("userName", summary.getUserName());
@@ -184,26 +189,47 @@ public class InsightAiService {
                     "totalAmount", scaleMoney(item.getTotalAmount())
             )).toList());
         } else {
-            var customerSummary = analyticsSummaryService.getCustomerSummary(authorization);
+            customerSummary = customerSummary == null
+                    ? analyticsSummaryService.getCustomerSummary(authorization)
+                    : customerSummary;
             var customerSpending = analyticsSummaryService.getCustomerSpending(authorization);
-            promptSummary.put("customerSummary", Map.of(
-                    "totalPurchases", customerSummary.getTotalPurchases(),
-                    "paidPurchases", customerSummary.getPaidPurchases(),
-                    "pendingPayments", customerSummary.getPendingPayments(),
-                    "rejectedPayments", customerSummary.getRejectedPayments(),
-                    "totalSpent", scaleMoney(customerSummary.getTotalSpent()),
-                    "walletBalance", scaleMoney(customerSummary.getWalletBalance()),
-                    "favoriteStoreId", customerSummary.getFavoriteStoreId() == null ? "Nao informado" : customerSummary.getFavoriteStoreId().toString(),
-                    "mostPurchasedProductName", defaultValue(customerSummary.getMostPurchasedProductName()),
-                    "mostPurchasedProductQuantity", defaultNumber(customerSummary.getMostPurchasedProductQuantity())
-            ));
-            promptSummary.put("customerSpending", Map.of(
-                    "totalPurchases", customerSpending.getTotalPurchases(),
-                    "totalSpent", scaleMoney(customerSpending.getTotalSpent()),
-                    "paidAmount", scaleMoney(customerSpending.getPaidAmount()),
-                    "pendingAmount", scaleMoney(customerSpending.getPendingAmount()),
-                    "rejectedAmount", scaleMoney(customerSpending.getRejectedAmount())
-            ));
+            Map<String, Object> customerSummaryData = new LinkedHashMap<>();
+            customerSummaryData.put("totalPurchases", customerSummary.getTotalPurchases());
+            customerSummaryData.put("paidPurchases", customerSummary.getPaidPurchases());
+            customerSummaryData.put("pendingPayments", customerSummary.getPendingPayments());
+            customerSummaryData.put("rejectedPayments", customerSummary.getRejectedPayments());
+            customerSummaryData.put("totalSpent", scaleMoney(customerSummary.getTotalSpent()));
+            customerSummaryData.put("walletBalance", scaleMoney(customerSummary.getWalletBalance()));
+            customerSummaryData.put("favoriteStoreId", customerSummary.getFavoriteStoreId() == null ? "Nao informado" : customerSummary.getFavoriteStoreId().toString());
+            customerSummaryData.put("favoriteStoreName", defaultValue(customerSummary.getFavoriteStoreName()));
+            customerSummaryData.put("lastPurchaseStoreId", customerSummary.getLastPurchaseStoreId() == null ? "Nao informado" : customerSummary.getLastPurchaseStoreId().toString());
+            customerSummaryData.put("lastPurchaseStoreName", defaultValue(customerSummary.getLastPurchaseStoreName()));
+            customerSummaryData.put("lastPurchaseOrderId", defaultValue(customerSummary.getLastPurchaseOrderId()));
+            customerSummaryData.put("lastPurchaseAmount", scaleMoney(customerSummary.getLastPurchaseAmount()));
+            customerSummaryData.put("lastPurchasePaymentStatus", defaultValue(customerSummary.getLastPurchasePaymentStatus()));
+            customerSummaryData.put("lastPurchaseAt", String.valueOf(customerSummary.getLastPurchaseAt()));
+            customerSummaryData.put("lastPurchaseProductNames", customerSummary.getLastPurchaseProductNames() == null ? List.of() : customerSummary.getLastPurchaseProductNames());
+            customerSummaryData.put("mostPurchasedProductName", defaultValue(customerSummary.getMostPurchasedProductName()));
+            customerSummaryData.put("mostPurchasedProductQuantity", defaultNumber(customerSummary.getMostPurchasedProductQuantity()));
+            promptSummary.put("customerSummary", customerSummaryData);
+
+            Map<String, Object> customerSpendingData = new LinkedHashMap<>();
+            customerSpendingData.put("totalPurchases", customerSpending.getTotalPurchases());
+            customerSpendingData.put("totalSpent", scaleMoney(customerSpending.getTotalSpent()));
+            customerSpendingData.put("paidAmount", scaleMoney(customerSpending.getPaidAmount()));
+            customerSpendingData.put("pendingAmount", scaleMoney(customerSpending.getPendingAmount()));
+            customerSpendingData.put("rejectedAmount", scaleMoney(customerSpending.getRejectedAmount()));
+            customerSpendingData.put("recentPurchases", customerSpending.getRecentPurchases() == null ? List.of() : customerSpending.getRecentPurchases().stream().limit(3).map(item -> Map.of(
+                    "storeId", item.getStoreId() == null ? "Nao informado" : item.getStoreId().toString(),
+                    "storeName", defaultValue(item.getStoreName()),
+                    "orderId", item.getOrderId() == null ? "Nao informado" : item.getOrderId().toString(),
+                    "localOrderId", defaultValue(item.getLocalOrderId()),
+                    "purchasedAt", String.valueOf(item.getPurchasedAt()),
+                    "totalAmount", scaleMoney(item.getTotalAmount()),
+                    "paymentStatus", defaultValue(item.getPaymentStatus()),
+                    "productNames", item.getProductNames() == null ? List.of() : item.getProductNames()
+            )).toList());
+            promptSummary.put("customerSpending", customerSpendingData);
         }
 
         return promptSummary;
@@ -226,7 +252,25 @@ public class InsightAiService {
         return "Oi! Posso te ajudar com gastos, saldo da carteira, compras pendentes, lojas em que voce mais comprou e desempenho por periodo.";
     }
 
-    private String buildScopedReply(AuthUserResponse authUser, QuestionScope questionScope, AnalyticsPeriodSummaryResponse periodSummary) {
+    private String buildScopedReply(
+            AuthUserResponse authUser,
+            QuestionScope questionScope,
+            AnalyticsPeriodSummaryResponse periodSummary,
+            CustomerSummaryResponse customerSummary
+    ) {
+        if (authUser.isCustomer() && customerSummary != null && questionScope.intent() != null) {
+            switch (questionScope.intent()) {
+                case "last_store" -> {
+                    return buildLastStoreReply(customerSummary);
+                }
+                case "last_purchase" -> {
+                    return buildLastPurchaseReply(customerSummary);
+                }
+                default -> {
+                }
+            }
+        }
+
         if (periodSummary == null || questionScope.intent() == null) {
             return null;
         }
@@ -259,7 +303,7 @@ public class InsightAiService {
         return switch (period.toLowerCase(Locale.ROOT)) {
             case "today", "hoje" -> "hoje";
             case "yesterday", "ontem" -> "ontem";
-            case "week", "this_week", "semana", "esta_semana" -> "nesta semana";
+            case "week", "this_week", "semana", "esta_semana", "last_7_days", "ultimos_7_dias" -> "nos ultimos 7 dias";
             case "month", "this_month", "mes", "este_mes" -> "neste mes";
             default -> "no periodo solicitado";
         };
@@ -280,6 +324,16 @@ public class InsightAiService {
     }
 
     private String detectPeriod(String question) {
+        if (containsAny(
+                question,
+                "ultimos 7 dias",
+                "últimos 7 dias",
+                "7 dias",
+                "ultima semana",
+                "última semana"
+        )) {
+            return "last_7_days";
+        }
         if (question.contains("hoje")) {
             return "today";
         }
@@ -296,6 +350,12 @@ public class InsightAiService {
     }
 
     private String detectIntent(String question) {
+        if (containsAny(question, "ultima loja", "última loja", "loja que eu comprei por ultimo", "loja que eu comprei por último")) {
+            return "last_store";
+        }
+        if (containsAny(question, "ultima compra", "última compra", "ultimo pedido", "último pedido", "comprei por ultimo", "comprei por último")) {
+            return "last_purchase";
+        }
         if (containsAny(question, "gastei", "gasto", "vendi", "vendas", "faturei", "faturamento", "recebi")) {
             return "spent_amount";
         }
@@ -315,6 +375,43 @@ public class InsightAiService {
             return "top_product";
         }
         return null;
+    }
+
+    private String buildLastStoreReply(CustomerSummaryResponse customerSummary) {
+        if (customerSummary.getLastPurchaseStoreId() == null) {
+            return "Nao encontrei uma compra recente para identificar a ultima loja.";
+        }
+
+        String storeLabel = customerSummary.getLastPurchaseStoreName() != null && !customerSummary.getLastPurchaseStoreName().isBlank()
+                ? customerSummary.getLastPurchaseStoreName()
+                : "ID " + customerSummary.getLastPurchaseStoreId();
+
+        if (customerSummary.getLastPurchaseAt() == null) {
+            return "Sua compra mais recente foi na loja " + storeLabel + ".";
+        }
+
+        return "Sua compra mais recente foi na loja " + storeLabel
+                + ", em " + customerSummary.getLastPurchaseAt()
+                + ", no valor de R$ " + scaleMoney(customerSummary.getLastPurchaseAmount()) + ".";
+    }
+
+    private String buildLastPurchaseReply(CustomerSummaryResponse customerSummary) {
+        if (customerSummary.getLastPurchaseAt() == null) {
+            return "Nao encontrei uma compra recente para responder com seguranca.";
+        }
+
+        String products = customerSummary.getLastPurchaseProductNames() == null || customerSummary.getLastPurchaseProductNames().isEmpty()
+                ? "sem produtos identificados"
+                : String.join(", ", customerSummary.getLastPurchaseProductNames());
+        String storeLabel = customerSummary.getLastPurchaseStoreName() != null && !customerSummary.getLastPurchaseStoreName().isBlank()
+                ? customerSummary.getLastPurchaseStoreName()
+                : defaultValue(customerSummary.getLastPurchaseStoreId() == null ? null : customerSummary.getLastPurchaseStoreId().toString());
+
+        return "Sua compra mais recente foi em " + customerSummary.getLastPurchaseAt()
+                + ", na loja " + storeLabel
+                + ", no valor de R$ " + scaleMoney(customerSummary.getLastPurchaseAmount())
+                + ", com status de pagamento " + defaultValue(customerSummary.getLastPurchasePaymentStatus())
+                + ". Produtos: " + products + ".";
     }
 
     private boolean containsAny(String value, String... terms) {

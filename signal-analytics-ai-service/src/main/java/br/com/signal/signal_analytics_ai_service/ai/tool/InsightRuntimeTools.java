@@ -4,6 +4,7 @@ import br.com.signal.signal_analytics_ai_service.ai.knowledge.KnowledgeRetrieval
 import br.com.signal.signal_analytics_ai_service.ai.knowledge.KnowledgeSnippet;
 import br.com.signal.signal_analytics_ai_service.analytics.dto.response.AnalyticsSummaryResponse;
 import br.com.signal.signal_analytics_ai_service.analytics.dto.response.CustomerSummaryResponse;
+import br.com.signal.signal_analytics_ai_service.analytics.dto.response.CustomerSpendingResponse;
 import br.com.signal.signal_analytics_ai_service.analytics.dto.response.SellerSummaryResponse;
 import br.com.signal.signal_analytics_ai_service.analytics.dto.response.TopProductResponse;
 import br.com.signal.signal_analytics_ai_service.analytics.service.AnalyticsSummaryService;
@@ -49,7 +50,16 @@ public class InsightRuntimeTools {
         }
 
         CustomerSummaryResponse summary = analyticsSummaryService.getCustomerSummary(authorization);
-        return summary;
+        CustomerSpendingResponse spending = analyticsSummaryService.getCustomerSpending(authorization);
+        return new CustomerRuntimeSummary(summary, spending);
+    }
+
+    @Tool(description = "Retorna fatos objetivos sobre a compra mais recente do cliente autenticado.")
+    public CustomerSummaryResponse getLastPurchaseFacts() {
+        if (!authUser.isCustomer()) {
+            throw new IllegalStateException("Somente clientes possuem compras para consulta.");
+        }
+        return analyticsSummaryService.getCustomerSummary(authorization);
     }
 
     @Tool(description = "Busca regras operacionais e trechos de conhecimento relevantes para responder a pergunta do usuario.")
@@ -68,6 +78,12 @@ public class InsightRuntimeTools {
     public record SellerRuntimeSummary(
             SellerSummaryResponse summary,
             List<TopProductResponse> topProducts
+    ) {
+    }
+
+    public record CustomerRuntimeSummary(
+            CustomerSummaryResponse summary,
+            CustomerSpendingResponse spending
     ) {
     }
 }

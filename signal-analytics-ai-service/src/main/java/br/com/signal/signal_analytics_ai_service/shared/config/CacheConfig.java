@@ -22,7 +22,8 @@ public class CacheConfig {
                 "analyticsPeriodSummary",
                 "analyticsMyChart",
                 "analyticsSellerChart",
-                "analyticsCustomerChart"
+                "analyticsCustomerChart",
+                "storeById"
         );
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(500)

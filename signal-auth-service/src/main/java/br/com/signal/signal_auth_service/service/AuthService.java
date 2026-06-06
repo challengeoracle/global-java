@@ -4,11 +4,13 @@ import br.com.signal.signal_auth_service.dto.AuthResponse;
 import br.com.signal.signal_auth_service.dto.LoginRequest;
 import br.com.signal.signal_auth_service.dto.RegisterCustomerRequest;
 import br.com.signal.signal_auth_service.dto.RegisterSellerRequest;
+import br.com.signal.signal_auth_service.dto.StoreResponse;
 import br.com.signal.signal_auth_service.dto.UserResponse;
 import br.com.signal.signal_auth_service.entity.Store;
 import br.com.signal.signal_auth_service.entity.User;
 import br.com.signal.signal_auth_service.entity.UserRole;
 import br.com.signal.signal_auth_service.exception.BadRequestException;
+import br.com.signal.signal_auth_service.exception.NotFoundException;
 import br.com.signal.signal_auth_service.exception.UnauthorizedException;
 import br.com.signal.signal_auth_service.repository.StoreRepository;
 import br.com.signal.signal_auth_service.repository.UserRepository;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -149,6 +152,17 @@ public class AuthService {
                 user,
                 store
         );
+    }
+
+    public StoreResponse findStoreById(UUID storeId) {
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new NotFoundException("Store not found"));
+
+        return StoreResponse.builder()
+                .id(store.getId())
+                .name(store.getName())
+                .category(store.getCategory())
+                .build();
     }
 
     private void validateUserCreation(

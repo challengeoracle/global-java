@@ -24,6 +24,7 @@ public class CustomerSpendingResponse {
 
     private List<CustomerSpendingByStoreResponse> spendingByStore;
     private List<TopProductResponse> mostPurchasedProducts;
+    private List<RecentPurchaseResponse> recentPurchases;
 
     private String message;
 }
