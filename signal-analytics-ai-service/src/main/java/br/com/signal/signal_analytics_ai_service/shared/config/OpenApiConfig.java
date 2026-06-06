@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
         info = @Info(
                 title = "OffPay Analytics AI Service API",
                 version = "v1",
-                description = "Servico de analises e insights com IA do OffPay. Responsavel por resumos, graficos e perguntas sobre operacao.",
+                description = "Serviço de análises e insights com IA do OffPay. Responsável por resumos, gráficos e perguntas sobre a operação.",
                 contact = @Contact(name = "Equipe OffPay", email = "devops@offpay.local"),
                 license = @License(name = "Academic Use Only")
         ),

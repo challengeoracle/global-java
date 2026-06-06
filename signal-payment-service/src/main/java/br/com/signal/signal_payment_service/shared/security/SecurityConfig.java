@@ -32,15 +32,11 @@ public class SecurityConfig {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
-
                 .cors(Customizer.withDefaults())
-
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
                 .exceptionHandling(exception -> exception
-
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
@@ -55,7 +51,6 @@ public class SecurityConfig {
                                     }
                                     """.formatted(LocalDateTime.now()));
                         })
-
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json");
@@ -71,11 +66,8 @@ public class SecurityConfig {
                                     """.formatted(LocalDateTime.now()));
                         })
                 )
-
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -83,26 +75,19 @@ public class SecurityConfig {
                                 "/v3/api-docs.yaml",
                                 "/error"
                         ).permitAll()
-
                         .requestMatchers(HttpMethod.GET, "/wallet/**")
                         .authenticated()
-
                         .requestMatchers(HttpMethod.POST, "/wallet/deposit")
                         .hasRole("CUSTOMER")
-
                         .requestMatchers(HttpMethod.POST, "/wallet/settle")
                         .hasRole("SELLER")
-
                         .requestMatchers(HttpMethod.GET, "/payment/transactions/**")
                         .authenticated()
-
                         .requestMatchers(HttpMethod.POST, "/payment/transactions/order/*/settle-debt")
                         .hasRole("CUSTOMER")
-
                         .anyRequest()
                         .authenticated()
                 )
-
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -117,18 +102,11 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of("*"));
-
-        configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        );
-
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-
         configuration.setExposedHeaders(List.of("Authorization"));
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 
         return source;

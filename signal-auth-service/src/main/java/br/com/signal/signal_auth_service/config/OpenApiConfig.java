@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
         info = @Info(
                 title = "OffPay Auth Service API",
                 version = "v1",
-                description = "Servico de autenticacao e identidade do OffPay. Responsavel por cadastro, login, emissao de JWT e consulta do perfil autenticado.",
+                description = "Serviço de autenticação e identidade do OffPay. Responsável por cadastro, login, emissão de JWT e consulta do perfil autenticado.",
                 contact = @Contact(name = "Equipe OffPay", email = "devops@offpay.local"),
                 license = @License(name = "Academic Use Only")
         ),

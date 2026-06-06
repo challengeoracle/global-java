@@ -20,7 +20,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/catalog")
 @RequiredArgsConstructor
-@Tag(name = "Catalog", description = "Consulta e sincronizacao do catalogo da loja.")
+@Tag(name = "Catalog", description = "Consulta e sincronização do catálogo da loja.")
 public class CatalogController {
 
     private final CatalogService catalogService;
@@ -28,7 +28,7 @@ public class CatalogController {
     private final CatalogModelAssembler catalogModelAssembler;
 
     @GetMapping("/me")
-    @Operation(summary = "Consultar meu catalogo", description = "Retorna o catalogo consolidado da loja do vendedor autenticado.")
+    @Operation(summary = "Consultar meu catálogo", description = "Retorna o catálogo consolidado da loja do vendedor autenticado.")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<CatalogResponse> findMyCatalog(
             @RequestHeader("Authorization") String authorization
@@ -39,7 +39,7 @@ public class CatalogController {
     }
 
     @GetMapping("/store/{storeId}")
-    @Operation(summary = "Consultar catalogo por loja", description = "Retorna o catalogo publico de uma loja especifica.")
+    @Operation(summary = "Consultar catálogo por loja", description = "Retorna o catálogo público de uma loja específica.")
     public ResponseEntity<CatalogResponse> findCatalogByStore(
             @PathVariable UUID storeId
     ) {
@@ -49,7 +49,7 @@ public class CatalogController {
     }
 
     @GetMapping("/store/{storeId}/resource")
-    @Operation(summary = "Consultar catalogo HATEOAS", description = "Retorna o catalogo publico de uma loja no formato de recurso HATEOAS.")
+    @Operation(summary = "Consultar catálogo HATEOAS", description = "Retorna o catálogo público de uma loja no formato de recurso HATEOAS.")
     public ResponseEntity<EntityModel<CatalogResponse>> findCatalogByStoreResource(
             @PathVariable UUID storeId
     ) {
@@ -59,7 +59,7 @@ public class CatalogController {
     }
 
     @PostMapping("/sync")
-    @Operation(summary = "Sincronizar catalogo", description = "Recebe alteracoes offline e sincroniza categorias e produtos do catalogo.")
+    @Operation(summary = "Sincronizar catálogo", description = "Recebe alterações offline e sincroniza categorias e produtos do catálogo.")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<CatalogSyncResponse> syncCatalog(
             @RequestBody @Valid CatalogSyncRequest request,

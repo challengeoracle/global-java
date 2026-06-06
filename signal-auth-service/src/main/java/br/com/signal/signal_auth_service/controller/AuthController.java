@@ -46,7 +46,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Realizar login", description = "Autentica um usuario existente e retorna um novo JWT.")
+    @Operation(summary = "Realizar login", description = "Autentica um usuário existente e retorna um novo JWT.")
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request
     ) {
@@ -54,7 +54,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    @Operation(summary = "Consultar perfil autenticado", description = "Retorna os dados do usuario autenticado a partir do JWT enviado.")
+    @Operation(summary = "Consultar perfil autenticado", description = "Retorna os dados do usuário autenticado a partir do JWT enviado.")
     public ResponseEntity<EntityModel<UserResponse>> me(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
@@ -64,7 +64,7 @@ public class AuthController {
     }
 
     @GetMapping("/stores/{storeId}")
-    @Operation(summary = "Consultar loja por id", description = "Retorna os dados basicos de uma loja a partir do id.")
+    @Operation(summary = "Consultar loja por id", description = "Retorna os dados básicos de uma loja a partir do id.")
     public ResponseEntity<StoreResponse> findStoreById(
             @PathVariable UUID storeId
     ) {

@@ -66,7 +66,6 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -74,22 +73,16 @@ public class SecurityConfig {
                                 "/v3/api-docs.yaml",
                                 "/error"
                         ).permitAll()
-
                         .requestMatchers(HttpMethod.GET, "/analytics/me/summary")
                         .authenticated()
-
                         .requestMatchers(HttpMethod.GET, "/analytics/seller/**")
                         .hasRole("SELLER")
-
                         .requestMatchers(HttpMethod.GET, "/analytics/customer/**")
                         .hasRole("CUSTOMER")
-
                         .requestMatchers(HttpMethod.POST, "/ai/insights/ask")
                         .authenticated()
-
                         .requestMatchers("/analytics/**", "/ai/**")
                         .authenticated()
-
                         .anyRequest()
                         .authenticated()
                 )

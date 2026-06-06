@@ -16,7 +16,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/payment/transactions")
 @RequiredArgsConstructor
-@Tag(name = "Payment Transactions", description = "Consulta e liquidacao de transacoes financeiras do OffPay.")
+@Tag(name = "Payment Transactions", description = "Consulta e liquidação de transações financeiras do OffPay.")
 @SecurityRequirement(name = "bearerAuth")
 public class PaymentTransactionController {
 
@@ -24,7 +24,7 @@ public class PaymentTransactionController {
     private final PaymentDebtService paymentDebtService;
 
     @GetMapping("/me")
-    @Operation(summary = "Listar minhas transacoes", description = "Retorna as transacoes do usuario autenticado.")
+    @Operation(summary = "Listar minhas transações", description = "Retorna as transações do usuário autenticado.")
     public List<PaymentTransactionResponse> findMyTransactions(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -41,7 +41,7 @@ public class PaymentTransactionController {
     }
 
     @GetMapping("/order/{orderId}")
-    @Operation(summary = "Consultar transacao por pedido", description = "Retorna a transacao vinculada a um pedido especifico.")
+    @Operation(summary = "Consultar transação por pedido", description = "Retorna a transação vinculada a um pedido específico.")
     public PaymentTransactionResponse findByOrderId(
             @RequestHeader("Authorization") String authorization,
             @PathVariable UUID orderId
@@ -50,7 +50,7 @@ public class PaymentTransactionController {
     }
 
     @PostMapping("/order/{orderId}/settle-debt")
-    @Operation(summary = "Liquidar debito do pedido", description = "Realiza a liquidacao do debito pendente associado ao pedido informado.")
+    @Operation(summary = "Liquidar débito do pedido", description = "Realiza a liquidação do débito pendente associado ao pedido informado.")
     public PaymentTransactionResponse settleCreditDebt(
             @RequestHeader("Authorization") String authorization,
             @PathVariable UUID orderId

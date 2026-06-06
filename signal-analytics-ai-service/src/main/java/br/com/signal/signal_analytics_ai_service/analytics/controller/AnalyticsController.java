@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/analytics")
 @RequiredArgsConstructor
-@Tag(name = "Analytics", description = "Resumo operacional, graficos e indicadores de uso do OffPay.")
+@Tag(name = "Analytics", description = "Resumo operacional, gráficos e indicadores de uso do OffPay.")
 @SecurityRequirement(name = "bearerAuth")
 public class AnalyticsController {
 
@@ -26,7 +26,7 @@ public class AnalyticsController {
     private final AnalyticsResourceAssembler analyticsResourceAssembler;
 
     @GetMapping("/me/summary")
-    @Operation(summary = "Resumo geral do usuario", description = "Retorna o resumo consolidado do usuario autenticado.")
+    @Operation(summary = "Resumo geral do usuário", description = "Retorna o resumo consolidado do usuário autenticado.")
     public AnalyticsSummaryResponse getMySummary(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -43,7 +43,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/seller/summary")
-    @Operation(summary = "Resumo do vendedor", description = "Retorna indicadores especificos para o vendedor autenticado.")
+    @Operation(summary = "Resumo do vendedor", description = "Retorna indicadores específicos para o vendedor autenticado.")
     public SellerSummaryResponse getSellerSummary(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -60,7 +60,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/customer/summary")
-    @Operation(summary = "Resumo do cliente", description = "Retorna indicadores especificos para o cliente autenticado.")
+    @Operation(summary = "Resumo do cliente", description = "Retorna indicadores específicos para o cliente autenticado.")
     public CustomerSummaryResponse getCustomerSummary(
             @RequestHeader("Authorization") String authorization
     ) {

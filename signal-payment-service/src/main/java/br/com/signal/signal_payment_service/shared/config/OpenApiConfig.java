@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
         info = @Info(
                 title = "OffPay Payment Service API",
                 version = "v1",
-                description = "Servico de pagamentos do OffPay. Responsavel por transacoes, carteiras e liquidacao de debitos.",
+                description = "Serviço de pagamentos do OffPay. Responsável por transações, carteiras e liquidação de débitos.",
                 contact = @Contact(name = "Equipe OffPay", email = "devops@offpay.local"),
                 license = @License(name = "Academic Use Only")
         ),

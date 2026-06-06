@@ -20,7 +20,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/category")
 @RequiredArgsConstructor
-@Tag(name = "Product Categories", description = "Gestao de categorias do catalogo da loja autenticada.")
+@Tag(name = "Product Categories", description = "Gestão de categorias do catálogo da loja autenticada.")
 @SecurityRequirement(name = "bearerAuth")
 public class ProductCategoryController {
 
@@ -37,7 +37,7 @@ public class ProductCategoryController {
     }
 
     @GetMapping("/me")
-    @Operation(summary = "Listar minhas categorias", description = "Retorna as categorias pertencentes a loja do vendedor autenticado.")
+    @Operation(summary = "Listar minhas categorias", description = "Retorna as categorias pertencentes à loja do vendedor autenticado.")
     public ResponseEntity<List<CategoryResponse>> findMyCategories(
             @RequestHeader("Authorization") String authorization
     ) {
@@ -58,7 +58,7 @@ public class ProductCategoryController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar categoria", description = "Atualiza nome e descricao de uma categoria da loja autenticada.")
+    @Operation(summary = "Atualizar categoria", description = "Atualiza nome e descrição de uma categoria da loja autenticada.")
     public ResponseEntity<CategoryResponse> update(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateCategoryRequest request,
@@ -70,7 +70,7 @@ public class ProductCategoryController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Desativar categoria", description = "Realiza a desativacao logica da categoria informada.")
+    @Operation(summary = "Desativar categoria", description = "Realiza a desativação lógica da categoria informada.")
     public ResponseEntity<Void> deactivate(
             @PathVariable UUID id,
             @RequestHeader("Authorization") String authorization

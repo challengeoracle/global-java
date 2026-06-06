@@ -145,12 +145,12 @@ public class AnalyticsSummaryService {
                 .lastPurchaseStoreName(lastPurchase == null ? null : lastPurchase.getStoreName())
                 .lastPurchaseOrderId(lastPurchase == null ? null : defaultText(lastPurchase.getLocalOrderId(), lastPurchase.getOrderId()))
                 .lastPurchaseAmount(lastPurchase == null ? BigDecimal.ZERO : nullToZero(lastPurchase.getTotalAmount()))
-                .lastPurchasePaymentStatus(lastPurchase == null ? "Nao informado" : defaultText(lastPurchase.getPaymentStatus()))
+                .lastPurchasePaymentStatus(lastPurchase == null ? "Não informado" : defaultText(lastPurchase.getPaymentStatus()))
                 .lastPurchaseAt(lastPurchase == null ? null : lastPurchase.getPurchasedAt())
                 .lastPurchaseProductNames(lastPurchase == null ? List.of() : defaultList(lastPurchase.getProductNames()))
                 .mostPurchasedProductName(topProduct.productName())
                 .mostPurchasedProductQuantity(topProduct.quantity())
-                .message("Voce possui " + purchases.size() + " compra(s), totalizando R$ "
+                .message("Você possui " + purchases.size() + " compra(s), totalizando R$ "
                         + totalSpent + ". Produto mais recorrente: " + topProduct.productName() + ".")
                 .build();
     }
@@ -459,11 +459,11 @@ public class AnalyticsSummaryService {
         if (primary != null && !primary.isBlank()) {
             return primary;
         }
-        return fallbackId == null ? "Nao informado" : fallbackId.toString();
+        return fallbackId == null ? "Não informado" : fallbackId.toString();
     }
 
     private String defaultText(String value) {
-        return value == null || value.isBlank() ? "Nao informado" : value;
+        return value == null || value.isBlank() ? "Não informado" : value;
     }
 
     private List<String> defaultList(List<String> values) {
@@ -495,14 +495,14 @@ public class AnalyticsSummaryService {
             int paymentTransactionCount
     ) {
         if (authUser.isSeller()) {
-            return "Sua operacao possui " + totalOrders + " pedido(s), totalizando R$ "
+            return "Sua operação possui " + totalOrders + " pedido(s), totalizando R$ "
                     + totalAmount + ". Produto mais recorrente: " + topProduct.productName()
-                    + ". Transacoes financeiras encontradas: " + paymentTransactionCount + ".";
+                    + ". Transações financeiras encontradas: " + paymentTransactionCount + ".";
         }
 
-        return "Voce possui " + totalOrders + " compra(s), totalizando R$ "
+        return "Você possui " + totalOrders + " compra(s), totalizando R$ "
                 + totalAmount + ". Produto mais recorrente: " + topProduct.productName()
-                + ". Transacoes financeiras encontradas: " + paymentTransactionCount + ".";
+                + ". Transações financeiras encontradas: " + paymentTransactionCount + ".";
     }
 
     private String buildPeriodMessage(
@@ -513,11 +513,11 @@ public class AnalyticsSummaryService {
             TopProductResult topProduct
     ) {
         if (authUser.isSeller()) {
-            return "No periodo " + window.label() + ", sua loja registrou " + totalOrders
+            return "No período " + window.label() + ", sua loja registrou " + totalOrders
                     + " venda(s), totalizando R$ " + totalAmount + ". Produto destaque: " + topProduct.productName() + ".";
         }
 
-        return "No periodo " + window.label() + ", voce registrou " + totalOrders
+        return "No período " + window.label() + ", você registrou " + totalOrders
                 + " compra(s), totalizando R$ " + totalAmount + ". Produto destaque: " + topProduct.productName() + ".";
     }
 

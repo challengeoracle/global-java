@@ -20,7 +20,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/product")
 @RequiredArgsConstructor
-@Tag(name = "Products", description = "Gestao de produtos do catalogo publico e da loja autenticada.")
+@Tag(name = "Products", description = "Gestão de produtos do catálogo público e da loja autenticada.")
 public class ProductController {
 
     private final ProductService productService;
@@ -37,7 +37,7 @@ public class ProductController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar produtos ativos", description = "Retorna todos os produtos ativos do catalogo.")
+    @Operation(summary = "Listar produtos ativos", description = "Retorna todos os produtos ativos do catálogo.")
     public ResponseEntity<List<ProductResponse>> findAllActive() {
         return ResponseEntity.ok(
                 productService.findAllActive()
@@ -132,7 +132,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Desativar produto", description = "Realiza a desativacao logica de um produto da loja autenticada.")
+    @Operation(summary = "Desativar produto", description = "Realiza a desativação lógica de um produto da loja autenticada.")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Void> deactivate(
             @PathVariable UUID id,

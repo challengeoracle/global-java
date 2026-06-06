@@ -16,23 +16,23 @@ public class OffPayMcpServer {
 
     private final KnowledgeRetrievalService knowledgeRetrievalService;
 
-    @McpTool(name = "search_offpay_runtime_knowledge", description = "Busca regras operacionais do OffPay sobre offline-first, sincronizacao, catalogo, estoque e pagamentos.")
+    @McpTool(name = "search_offpay_runtime_knowledge", description = "Busca regras operacionais do OffPay sobre offline-first, sincronização, catálogo, estoque e pagamentos.")
     public String searchOffPayRuntimeKnowledge(
-            @McpArg(name = "role", description = "Papel do usuario: SELLER ou CUSTOMER.", required = false) String role,
+            @McpArg(name = "role", description = "Papel do usuário: SELLER ou CUSTOMER.", required = false) String role,
             @McpArg(name = "question", description = "Pergunta ou tema para recuperar conhecimento.", required = true) String question
     ) {
         List<KnowledgeSnippet> snippets = knowledgeRetrievalService.retrieveByRole(role, question);
         return knowledgeRetrievalService.renderContext(snippets);
     }
 
-    @McpTool(name = "list_offpay_runtime_documents", description = "Lista os documentos de conhecimento disponiveis no runtime do OffPay.")
+    @McpTool(name = "list_offpay_runtime_documents", description = "Lista os documentos de conhecimento disponíveis no runtime do OffPay.")
     public List<KnowledgeRetrievalService.KnowledgeSource> listOffPayRuntimeDocuments() {
         return knowledgeRetrievalService.listAvailableSources();
     }
 
-    @McpResource(uri = "resource://offpay/knowledge/{documentId}", name = "offpay_runtime_knowledge_document", description = "Recupera o conteudo integral de um documento de conhecimento do OffPay.")
+    @McpResource(uri = "resource://offpay/knowledge/{documentId}", name = "offpay_runtime_knowledge_document", description = "Recupera o conteúdo integral de um documento de conhecimento do OffPay.")
     public String readOffPayKnowledgeDocument(
-            @McpArg(name = "documentId", description = "Identificador do documento sem a extensao .md.", required = true) String documentId
+            @McpArg(name = "documentId", description = "Identificador do documento sem a extensão .md.", required = true) String documentId
     ) {
         return knowledgeRetrievalService.readSource(documentId);
     }
