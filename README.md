@@ -8,6 +8,9 @@ Projeto acadêmico orientado a DevOps e cloud para manter a operação de pequen
 - `RM559873` - Davi Cavalcanti Jorge
 - `RM559728` - Mateus da Silveira Lima
 
+## Vídeo Demonstrativo (Integração com o Mobile)
+- https://youtu.be/ZMsivlVeczc
+
 ## Visão geral
 
 O OffPay foi pensado para reduzir perdas operacionais quando a internet falha durante o fluxo de venda. Em vez de depender de uma conexão estável o tempo todo, a solução separa responsabilidades em microsserviços e mantém a operação da loja com foco em continuidade, sincronização posterior e rastreabilidade.
